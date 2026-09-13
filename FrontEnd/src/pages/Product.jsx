@@ -1,26 +1,35 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../style/product.css";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../Redux/Slice";
+import '../style/product.css';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Redux Cart Items
+  // =========================
+  // REDUX CART
+  // =========================
+
   const cartItems = useSelector(
     (state) => state.cart.items
   );
 
-  // GET Products
+  // =========================
+  // FETCH PRODUCTS
+  // =========================
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const token = localStorage.getItem("token");
 
@@ -40,6 +49,11 @@ export default function Products() {
       console.error(
         error.response?.data || error.message
       );
+
+      setError(
+        error.response?.data?.message ||
+          "Unable to load products."
+      );
     } finally {
       setLoading(false);
     }
@@ -49,223 +63,493 @@ export default function Products() {
     fetchProducts();
   }, []);
 
-  return (
-    <div className="container-fluid bg-light min-vh-100 py-4">
+  // =========================
+  // SEARCH
+  // =========================
 
-      <div className="container">
+  const filteredProducts = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
 
-        <div className="card border-0 shadow-sm product-card">
+    if (!keyword) {
+      return products;
+    }
 
-          <div className="card-body">
+    return products.filter((item) =>
+      item.name?.toLowerCase().includes(keyword)
+    );
+  }, [products, search]);
 
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+  // =========================
+  // STOCK
+  // =========================
 
-              <h5 className="fw-bold mb-0">
-                Product List
-              </h5>
+  const getStock = (item) => {
+    return Number(
+      item.quantity ?? item.stock ?? 0
+    );
+  };
 
-              <span className="badge bg-primary fs-6">
-                {products.length} Products
+  const inStock = products.filter(
+    (item) => getStock(item) > 10
+  ).length;
+
+  const lowStock = products.filter((item) => {
+    const stock = getStock(item);
+
+    return stock > 0 && stock <= 10;
+  }).length;
+
+  const outOfStock = products.filter(
+    (item) => getStock(item) <= 0
+  ).length;
+
+  // =========================
+  // PRODUCT CARD
+  // =========================
+
+  const ProductCard = ({ item }) => {
+    const isInCart = cartItems.some(
+      (cartItem) => cartItem.id === item.id
+    );
+
+    const stock = getStock(item);
+
+    let stockClass = "stock-out";
+    let stockText = "Out of Stock";
+
+    if (stock > 10) {
+      stockClass = "stock-good";
+      stockText = "In Stock";
+    } else if (stock > 0) {
+      stockClass = "stock-low";
+      stockText = "Low Stock";
+    }
+
+    return (
+      <div className="product-card">
+
+        {/* =====================
+            IMAGE
+        ===================== */}
+
+        <div className="product-image-box">
+
+          <img
+            src={
+              item.image ||
+              "https://via.placeholder.com/500x400?text=No+Image"
+            }
+            alt={item.name || "Product"}
+            className="product-image"
+          />
+
+          {/* Product ID */}
+
+          <span className="product-id">
+            #{item.id}
+          </span>
+
+        </div>
+
+        {/* =====================
+            PRODUCT CONTENT
+        ===================== */}
+
+        <div className="product-content">
+
+          <div className="product-label">
+            PRODUCT
+          </div>
+
+          <h3 className="product-name">
+            {item.name || "Unnamed Product"}
+          </h3>
+
+          <p className="product-description">
+            {item.description ||
+              "No description available for this product."}
+          </p>
+
+          {/* =====================
+              PRICE / STOCK
+          ===================== */}
+
+          <div className="product-info">
+
+            <div className="price-section">
+
+              <span className="info-label">
+                Price
               </span>
+
+              <strong className="product-price">
+                ₹
+                {Number(
+                  item.price || 0
+                ).toLocaleString("en-IN")}
+              </strong>
 
             </div>
 
-            {/* Loading */}
-            {loading ? (
+            <div className="stock-section">
 
-              <div className="text-center py-5">
+              <span className="info-label">
+                Available
+              </span>
 
-                <div
-                  className="spinner-border text-primary"
-                  role="status"
-                ></div>
+              <strong>
+                {stock > 0
+                  ? `${stock} units`
+                  : "None"}
+              </strong>
 
-                <p className="text-muted mt-2">
-                  Loading products...
-                </p>
+            </div>
 
-              </div>
+          </div>
 
-            ) : products.length === 0 ? (
+          {/* =====================
+              CART BUTTON
+          ===================== */}
 
-              /* Empty State */
+          <button
+            className={`cart-button ${
+              isInCart ? "cart-added" : ""
+            }`}
+            disabled={isInCart}
+            onClick={() =>
+              dispatch(addToCart(item))
+            }
+          >
+            <span className="cart-button-icon">
+              {isInCart ? "✓" : "🛒"}
+            </span>
 
-              <div className="text-center py-5">
+            {isInCart
+              ? "Added to Cart"
+              : "Add to Cart"}
+          </button>
 
-                <div className="display-3 mb-3">
-                  📦
-                </div>
+        </div>
 
-                <h5>
-                  No Products Found
-                </h5>
+      </div>
+    );
+  };
 
-                <p className="text-muted">
-                  Add your first product to get started.
-                </p>
+  return (
+    <>
 
-                <button
-                  className="btn btn-primary"
-                  onClick={() =>
-                    navigate("/add-product")
-                  }
-                >
-                  + Add Product
-                </button>
 
-              </div>
+      <div className="products-page">
 
-            ) : (
+        {/* =================================
+            HEADER
+        ================================= */}
 
-              /* Product Cards */
+        <div className="products-header">
 
-              <div className="row g-4">
+          <div className="products-heading">
 
-                {products.map((item) => {
+            <div className="products-label">
+              🛍️ STORE CATALOG
+            </div>
 
-                  // Check whether this product
-                  // already exists in Redux cart
+            <h1>
+              Products
+            </h1>
 
-                  const isInCart = cartItems.some(
-                    (cartItem) =>
-                      cartItem.id === item.id
-                  );
+            <p>
+              Manage your product catalog,
+              pricing and inventory.
+            </p>
 
-                  return (
+          </div>
 
-                    <div
-                      className="col-12 col-sm-6 col-md-4 col-lg-3"
-                      key={item.id}
-                    >
+          <button
+            className="add-product-button"
+            onClick={() =>
+              navigate("/add-product")
+            }
+          >
+            + Add Product
+          </button>
 
-                      <div className="card h-100 border-0 shadow-sm product-card">
+        </div>
 
-                        {/* Product Image */}
 
-                        <div className="p-3 product-image-wrapper">
+        {/* =================================
+            STAT CARDS
+        ================================= */}
 
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="card-img-top rounded"
-                            style={{
-                              height: "220px",
-                              objectFit: "cover",
-                            }}
-                          />
+        <div className="products-stats">
 
-                        </div>
+          <div className="stat-card">
 
-                        {/* Product Details */}
+            <div className="stat-icon">
+              📦
+            </div>
 
-                        <div className="card-body d-flex flex-column">
+            <div className="stat-text">
 
-                          {/* ID */}
+              <span>
+                Total Products
+              </span>
 
-                          <div className="mb-2">
+              <strong>
+                {products.length}
+              </strong>
 
-                            <span className="product-id badge bg-secondary">
-                              #{item.id}
-                            </span>
+            </div>
 
-                          </div>
+          </div>
 
-                          {/* Name */}
 
-                          <h5 className="product-title fw-bold">
-                            {item.name}
-                          </h5>
+          <div className="stat-card">
 
-                          {/* Description */}
+            <div className="stat-icon">
+              ✓
+            </div>
 
-                          <p
-                            className="product-description text-muted"
-                            style={{
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              minHeight: "48px",
-                            }}
-                          >
-                            {item.description ||
-                              "No description available"}
-                          </p>
+            <div className="stat-text">
 
-                          {/* Price */}
+              <span>
+                In Stock
+              </span>
 
-                          <h5 className="product-price fw-bold text-success mt-2">
-                            ₹
-                            {Number(
-                              item.price
-                            ).toLocaleString("en-IN")}
-                          </h5>
+              <strong>
+                {inStock}
+              </strong>
 
-                          {/* Add To Cart */}
+            </div>
 
-                          <div className="d-flex gap-2 mt-auto pt-3">
+          </div>
 
-                            {isInCart ? (
 
-                              <button
-                                className="add-cart-btn added"
-                                disabled
-                              >
-                                <span className="cart-icon">
-                                  ✓
-                                </span>
+          <div className="stat-card">
 
-                                <span>
-                                  Added to Cart
-                                </span>
+            <div className="stat-icon">
+              ⚠️
+            </div>
 
-                              </button>
+            <div className="stat-text">
 
-                            ) : (
+              <span>
+                Low Stock
+              </span>
 
-                              <button
-                                className="add-cart-btn"
-                                onClick={() =>
-                                  dispatch(
-                                    addToCart(item)
-                                  )
-                                }
-                              >
-                                <span className="cart-icon">
-                                  🛒
-                                </span>
+              <strong>
+                {lowStock}
+              </strong>
 
-                                <span>
-                                  Add to Cart
-                                </span>
+            </div>
 
-                              </button>
+          </div>
 
-                            )}
 
-                          </div>
+          <div className="stat-card">
 
-                        </div>
+            <div className="stat-icon">
+              🛒
+            </div>
 
-                      </div>
+            <div className="stat-text">
 
-                    </div>
+              <span>
+                Cart Items
+              </span>
 
-                  );
+              <strong>
+                {cartItems.length}
+              </strong>
 
-                })}
-
-              </div>
-
-            )}
+            </div>
 
           </div>
 
         </div>
 
-      </div>
 
-    </div>
+        {/* =================================
+            SEARCH TOOLBAR
+        ================================= */}
+
+        {!loading && !error && (
+
+          <div className="products-toolbar">
+
+            <div className="search-box">
+
+              <span>
+                🔍
+              </span>
+
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search products..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+              />
+
+            </div>
+
+            <div className="showing-count">
+
+              Showing{" "}
+
+              <strong>
+                {filteredProducts.length}
+              </strong>
+
+              {" "}of{" "}
+
+              <strong>
+                {products.length}
+              </strong>
+
+              {" "}products
+
+            </div>
+
+          </div>
+
+        )}
+
+
+        {/* =================================
+            LOADING
+        ================================= */}
+
+        {loading && (
+
+          <div className="products-loading">
+
+            <div className="loading-spinner"></div>
+
+            <p>
+              Loading products...
+            </p>
+
+          </div>
+
+        )}
+
+
+        {/* =================================
+            ERROR
+        ================================= */}
+
+        {!loading && error && (
+
+          <div className="products-error">
+
+            <div className="products-error-icon">
+              ⚠️
+            </div>
+
+            <strong>
+              Unable to load products
+            </strong>
+
+            <p>
+              {error}
+            </p>
+
+            <button
+              className="retry-button"
+              onClick={fetchProducts}
+            >
+              Try Again
+            </button>
+
+          </div>
+
+        )}
+
+
+        {/* =================================
+            EMPTY
+        ================================= */}
+
+        {!loading &&
+          !error &&
+          products.length === 0 && (
+
+            <div className="products-empty">
+
+              <div className="empty-icon">
+                📦
+              </div>
+
+              <h3>
+                No Products Yet
+              </h3>
+
+              <p>
+                Add your first product to
+                start building your catalog.
+              </p>
+
+              <button
+                className="add-product-button"
+                onClick={() =>
+                  navigate("/add-product")
+                }
+              >
+                + Add Product
+              </button>
+
+            </div>
+
+          )}
+
+
+        {/* =================================
+            PRODUCT GRID
+        ================================= */}
+
+        {!loading &&
+          !error &&
+          products.length > 0 && (
+
+            <div className="products-grid">
+
+              {filteredProducts.length > 0 ? (
+
+                filteredProducts.map((item) => (
+                  <ProductCard
+                    key={item.id}
+                    item={item}
+                  />
+                ))
+
+              ) : (
+
+                <div className="no-results">
+
+                  <div className="no-results-icon">
+                    🔍
+                  </div>
+
+                  <h3>
+                    No Products Found
+                  </h3>
+
+                  <p>
+                    Try searching with another
+                    product name.
+                  </p>
+
+                </div>
+
+              )}
+
+            </div>
+
+          )}
+
+      </div>
+    </>
   );
 }

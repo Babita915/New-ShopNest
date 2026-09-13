@@ -6,6 +6,8 @@ export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -15,6 +17,7 @@ export default function Inventory() {
   const fetchInventory = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const token = localStorage.getItem("token");
 
@@ -34,6 +37,11 @@ export default function Inventory() {
       console.log(
         error.response?.data || error.message
       );
+
+      setError(
+        error.response?.data?.message ||
+          "Unable to load inventory"
+      );
     } finally {
       setLoading(false);
     }
@@ -50,6 +58,9 @@ export default function Inventory() {
     if (!confirmDelete) return;
 
     try {
+      setError("");
+      setMessage("");
+
       const token = localStorage.getItem("token");
 
       await axios.delete(
@@ -61,18 +72,31 @@ export default function Inventory() {
         }
       );
 
-      alert("Inventory Deleted Successfully");
+      setMessage("Inventory deleted successfully.");
 
-      fetchInventory();
+      // Remove deleted item directly from UI
+      setInventory((prev) =>
+        prev.filter((item) => item.id !== id)
+      );
+
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
     } catch (error) {
       console.log(
         error.response?.data || error.message
       );
 
-      alert("Delete Failed");
+      setError(
+        error.response?.data?.message ||
+          "Inventory delete failed"
+      );
     }
   };
 
+  // =========================
+  // USE EFFECT
+  // =========================
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -99,80 +123,208 @@ export default function Inventory() {
   );
 
   const lowStock = inventory.filter(
-    (item) => Number(item.stock) > 0 && Number(item.stock) <= 20
+    (item) =>
+      Number(item.stock) > 0 &&
+      Number(item.stock) <= 20
   ).length;
 
   const outOfStock = inventory.filter(
     (item) => Number(item.stock) === 0
   ).length;
 
-  return (
-    <div className="container-fluid bg-light min-vh-100 py-4">
+  const inStock = inventory.filter(
+    (item) => Number(item.stock) > 20
+  ).length;
 
-      <div className="container">
+  // =========================
+  // CLEAR SEARCH
+  // =========================
+  const clearSearch = () => {
+    setSearch("");
+  };
+
+  // =========================
+  // STOCK STATUS
+  // =========================
+  const getStockStatus = (stock) => {
+    if (stock === 0) {
+      return {
+        text: "Out of Stock",
+        className: "bg-danger-subtle text-danger",
+      };
+    }
+
+    if (stock <= 20) {
+      return {
+        text: "Low Stock",
+        className: "bg-warning-subtle text-warning-emphasis",
+      };
+    }
+
+    return {
+      text: "In Stock",
+      className: "bg-success-subtle text-success",
+    };
+  };
+
+  return (
+    <div
+      className="min-vh-100 py-4"
+      style={{
+        backgroundColor: "#f5f7fb",
+      }}
+    >
+      <div className="container-fluid px-3 px-md-4">
 
         {/* ================= HEADER ================= */}
 
-        <div className="card border-0 shadow-sm mb-4">
+        <div
+          className="card border-0 shadow-sm mb-4"
+          style={{
+            borderRadius: "16px",
+          }}
+        >
+          <div className="card-body p-4">
 
-          <div className="card-body">
-
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
 
               <div>
-                <h2 className="fw-bold mb-1">
-                  📦 Inventory Management
-                </h2>
+
+                <div className="d-flex align-items-center gap-2 mb-2">
+
+                  <div
+                    className="rounded-3 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "46px",
+                      height: "46px",
+                      backgroundColor: "#0d6efd",
+                      color: "white",
+                      fontSize: "23px",
+                    }}
+                  >
+                    📦
+                  </div>
+
+                  <h2 className="fw-bold mb-0">
+                    Inventory Management
+                  </h2>
+
+                </div>
 
                 <p className="text-muted mb-0">
-                  Manage product stock and inventory
+                  Monitor product stock and inventory levels
                 </p>
+
               </div>
 
-              <button
-                className="btn btn-primary px-4"
-                onClick={() =>
-                  navigate("/add-inventory")
-                }
-              >
-                <i className="bi bi-plus-lg"></i>{" "}
-                + Add Inventory
-              </button>
+              <div className="d-flex gap-2">
+
+                <button
+                  className="btn btn-light border px-3"
+                  onClick={fetchInventory}
+                  disabled={loading}
+                >
+                  🔄 Refresh
+                </button>
+
+                <button
+                  className="btn btn-primary px-4"
+                  onClick={() =>
+                    navigate("/add-inventory")
+                  }
+                >
+                  + Add Inventory
+                </button>
+
+              </div>
 
             </div>
 
           </div>
-
         </div>
 
+        {/* ================= MESSAGES ================= */}
+
+        {message && (
+          <div
+            className="alert alert-success border-0 shadow-sm d-flex justify-content-between align-items-center"
+            style={{
+              borderRadius: "12px",
+            }}
+          >
+            <span>
+              ✓ {message}
+            </span>
+
+            <button
+              className="btn-close"
+              onClick={() => setMessage("")}
+            ></button>
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="alert alert-danger border-0 shadow-sm d-flex justify-content-between align-items-center"
+            style={{
+              borderRadius: "12px",
+            }}
+          >
+            <span>
+              ⚠️ {error}
+            </span>
+
+            <button
+              className="btn-close"
+              onClick={() => setError("")}
+            ></button>
+          </div>
+        )}
 
         {/* ================= STATISTICS ================= */}
 
         <div className="row g-4 mb-4">
 
-          {/* Total Items */}
+          {/* TOTAL ITEMS */}
 
-          <div className="col-lg-3 col-md-6">
+          <div className="col-xl-3 col-md-6">
 
-            <div className="card border-0 shadow-sm h-100">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
 
-              <div className="card-body">
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
 
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Total Items
                     </p>
 
-                    <h2 className="fw-bold mb-0">
+                    <h2 className="fw-bold mb-1">
                       {totalItems}
                     </h2>
 
+                    <small className="text-muted">
+                      Inventory records
+                    </small>
+
                   </div>
 
-                  <div className="bg-primary text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#e7f0ff",
+                      fontSize: "27px",
+                    }}
+                  >
                     📦
                   </div>
 
@@ -184,30 +336,46 @@ export default function Inventory() {
 
           </div>
 
+          {/* TOTAL STOCK */}
 
-          {/* Total Stock */}
+          <div className="col-xl-3 col-md-6">
 
-          <div className="col-lg-3 col-md-6">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
 
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
 
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Total Stock
                     </p>
 
-                    <h2 className="fw-bold mb-0">
+                    <h2 className="fw-bold mb-1">
                       {totalStock}
                     </h2>
 
+                    <small className="text-muted">
+                      Total available units
+                    </small>
+
                   </div>
 
-                  <div className="bg-success text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#e8f8ef",
+                      fontSize: "27px",
+                    }}
+                  >
                     📊
                   </div>
 
@@ -219,30 +387,46 @@ export default function Inventory() {
 
           </div>
 
+          {/* LOW STOCK */}
 
-          {/* Low Stock */}
+          <div className="col-xl-3 col-md-6">
 
-          <div className="col-lg-3 col-md-6">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
 
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
 
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Low Stock
                     </p>
 
-                    <h2 className="fw-bold mb-0">
+                    <h2 className="fw-bold mb-1">
                       {lowStock}
                     </h2>
 
+                    <small className="text-muted">
+                      20 units or less
+                    </small>
+
                   </div>
 
-                  <div className="bg-warning text-dark rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#fff4d6",
+                      fontSize: "27px",
+                    }}
+                  >
                     ⚠️
                   </div>
 
@@ -254,30 +438,46 @@ export default function Inventory() {
 
           </div>
 
+          {/* OUT OF STOCK */}
 
-          {/* Out Of Stock */}
+          <div className="col-xl-3 col-md-6">
 
-          <div className="col-lg-3 col-md-6">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
 
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
 
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Out of Stock
                     </p>
 
-                    <h2 className="fw-bold mb-0">
+                    <h2 className="fw-bold mb-1">
                       {outOfStock}
                     </h2>
 
+                    <small className="text-muted">
+                      Requires restocking
+                    </small>
+
                   </div>
 
-                  <div className="bg-danger text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#ffe8e8",
+                      fontSize: "27px",
+                    }}
+                  >
                     ❌
                   </div>
 
@@ -291,16 +491,71 @@ export default function Inventory() {
 
         </div>
 
+        {/* ================= QUICK SUMMARY ================= */}
+
+        <div
+          className="card border-0 shadow-sm mb-4"
+          style={{
+            borderRadius: "16px",
+          }}
+        >
+
+          <div className="card-body p-4">
+
+            <div className="row align-items-center">
+
+              <div className="col-lg-7 mb-3 mb-lg-0">
+
+                <h5 className="fw-bold mb-1">
+                  Stock Overview
+                </h5>
+
+                <p className="text-muted mb-0">
+                  Current inventory status
+                </p>
+
+              </div>
+
+              <div className="col-lg-5">
+
+                <div className="d-flex justify-content-lg-end gap-2 flex-wrap">
+
+                  <span className="badge rounded-pill bg-success-subtle text-success px-3 py-2">
+                    ● In Stock: {inStock}
+                  </span>
+
+                  <span className="badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-2">
+                    ● Low Stock: {lowStock}
+                  </span>
+
+                  <span className="badge rounded-pill bg-danger-subtle text-danger px-3 py-2">
+                    ● Out: {outOfStock}
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
 
         {/* ================= INVENTORY TABLE ================= */}
 
-        <div className="card border-0 shadow-sm">
+        <div
+          className="card border-0 shadow-sm"
+          style={{
+            borderRadius: "16px",
+          }}
+        >
 
-          <div className="card-body">
+          <div className="card-body p-4">
 
-            {/* Table Header */}
+            {/* TABLE HEADER */}
 
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
 
               <div>
 
@@ -309,32 +564,48 @@ export default function Inventory() {
                 </h5>
 
                 <small className="text-muted">
-                  Manage all product stock
+                  View and manage all product stock
                 </small>
 
               </div>
 
+              {/* SEARCH */}
 
-              {/* Search */}
+              <div
+                className="input-group"
+                style={{
+                  maxWidth: "350px",
+                }}
+              >
 
-              <div style={{ maxWidth: "300px", width: "100%" }}>
+                <span className="input-group-text bg-white">
+                  🔍
+                </span>
 
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="🔍 Search Product ID..."
+                  placeholder="Search Product ID..."
                   value={search}
                   onChange={(e) =>
                     setSearch(e.target.value)
                   }
                 />
 
+                {search && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={clearSearch}
+                  >
+                    ✕
+                  </button>
+                )}
+
               </div>
 
             </div>
 
-
-            {/* Loading */}
+            {/* ================= LOADING ================= */}
 
             {loading ? (
 
@@ -342,10 +613,14 @@ export default function Inventory() {
 
                 <div
                   className="spinner-border text-primary"
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                  }}
                   role="status"
                 ></div>
 
-                <p className="text-muted mt-3">
+                <p className="text-muted mt-3 mb-0">
                   Loading inventory...
                 </p>
 
@@ -353,61 +628,106 @@ export default function Inventory() {
 
             ) : filteredInventory.length === 0 ? (
 
-              /* Empty */
+              /* ================= EMPTY ================= */
 
               <div className="text-center py-5">
 
-                <div className="display-3 mb-3">
+                <div
+                  className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    backgroundColor: "#f0f2f5",
+                    fontSize: "35px",
+                  }}
+                >
                   📦
                 </div>
 
                 <h5 className="fw-bold">
-                  No Inventory Found
+                  {search
+                    ? "No Matching Inventory"
+                    : "No Inventory Found"}
                 </h5>
 
                 <p className="text-muted">
-                  No inventory records are available.
+                  {search
+                    ? `No inventory found for Product ID "${search}".`
+                    : "No inventory records are available."}
                 </p>
 
-                <button
-                  className="btn btn-primary"
-                  onClick={() =>
-                    navigate("/add-inventory")
-                  }
-                >
-                  + Add Inventory
-                </button>
+                {search ? (
+
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={clearSearch}
+                  >
+                    Clear Search
+                  </button>
+
+                ) : (
+
+                  <button
+                    className="btn btn-primary"
+                    onClick={() =>
+                      navigate("/add-inventory")
+                    }
+                  >
+                    + Add Inventory
+                  </button>
+
+                )}
 
               </div>
 
             ) : (
 
+              /* ================= TABLE ================= */
+
               <div className="table-responsive">
 
-                <table className="table table-hover align-middle">
+                <table className="table align-middle mb-0">
 
-                  <thead className="table-dark">
+                  <thead
+                    style={{
+                      backgroundColor: "#f8f9fa",
+                    }}
+                  >
 
                     <tr>
 
-                      <th>ID</th>
+                      <th className="py-3">
+                        ID
+                      </th>
 
-                      <th>Product</th>
+                      <th className="py-3">
+                        Product_Id
+                      </th>
 
-                      <th>Stock</th>
+                      <th className="py-3">
+                        Stock
+                      </th>
 
-                      <th>Stock Level</th>
+                      <th
+                        className="py-3"
+                        style={{
+                          minWidth: "170px",
+                        }}
+                      >
+                        Stock Level
+                      </th>
 
-                      <th>Status</th>
+                      <th className="py-3">
+                        Status
+                      </th>
 
-                      <th className="text-center">
-                        Action
+                      <th className="py-3 text-center">
+                        Actions
                       </th>
 
                     </tr>
 
                   </thead>
-
 
                   <tbody>
 
@@ -423,6 +743,9 @@ export default function Inventory() {
                             100
                           );
 
+                        const status =
+                          getStockStatus(stock);
+
                         return (
 
                           <tr key={item.id}>
@@ -431,47 +754,82 @@ export default function Inventory() {
 
                             <td>
 
-                              <span className="badge bg-secondary">
+                              <span
+                                className="badge rounded-pill"
+                                style={{
+                                  backgroundColor:
+                                    "#f0f2f5",
+                                  color: "#495057",
+                                  padding:
+                                    "8px 12px",
+                                }}
+                              >
                                 #{item.id}
                               </span>
 
                             </td>
 
-
-                            {/* Product */}
-
-                            <td>
-
-                              <span className="badge bg-info text-dark">
-                                Product #{item.product_id}
-                              </span>
-
-                            </td>
-
-
-                            {/* Stock */}
+                            {/* PRODUCT */}
 
                             <td>
 
-                              <strong className="fs-6">
-                                {stock}
-                              </strong>
+                              <div className="d-flex align-items-center">
 
-                              <small className="text-muted ms-1">
-                                units
-                              </small>
+                                <div
+                                  className="rounded-3 d-flex align-items-center justify-content-center me-3"
+                                  style={{
+                                    width: "44px",
+                                    height: "44px",
+                                    backgroundColor:
+                                      "#e7f0ff",
+                                    fontSize: "20px",
+                                  }}
+                                >
+                                  📦
+                                </div>
+
+                                <div>
+
+                                  <div className="fw-semibold">
+                                    #{item.product_id}
+                                  </div>
+
+                                
+
+                                </div>
+
+                              </div>
 
                             </td>
 
+                            {/* STOCK */}
 
-                            {/* Progress */}
+                            <td>
 
-                            <td style={{ minWidth: "150px" }}>
+                              <div>
+
+                                <strong className="fs-5">
+                                  {stock}
+                                </strong>
+
+                                <small className="text-muted ms-1">
+                                  units
+                                </small>
+
+                              </div>
+
+                            </td>
+
+                            {/* PROGRESS */}
+
+                            <td>
 
                               <div
-                                className="progress"
+                                className="progress mb-1"
                                 style={{
                                   height: "8px",
+                                  backgroundColor:
+                                    "#e9ecef",
                                 }}
                               >
 
@@ -490,68 +848,62 @@ export default function Inventory() {
 
                               </div>
 
+                              <small className="text-muted">
+                                {Math.round(progress)}%
+                                capacity
+                              </small>
+
                             </td>
 
-
-                            {/* Status */}
+                            {/* STATUS */}
 
                             <td>
 
-                              {stock === 0 ? (
-
-                                <span className="badge bg-danger">
-                                  Out of Stock
-                                </span>
-
-                              ) : stock <= 20 ? (
-
-                                <span className="badge bg-warning text-dark">
-                                  Low Stock
-                                </span>
-
-                              ) : (
-
-                                <span className="badge bg-success">
-                                  In Stock
-                                </span>
-
-                              )}
+                              <span
+                                className={`badge rounded-pill px-3 py-2 ${status.className}`}
+                              >
+                                ● {status.text}
+                              </span>
 
                             </td>
 
-
-                            {/* Actions */}
+                            {/* ACTIONS */}
 
                             <td className="text-center">
 
-                              <button
-                                className="btn btn-outline-success btn-sm me-2"
-                                onClick={() =>
-                                  navigate(
-                                    `/editinventory/${item.id}`
-                                  )
-                                }
-                              >
-                                ✏️ Edit
-                              </button>
+                              <div className="d-flex justify-content-center gap-2">
 
-                              <button
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() =>
-                                  deleteInventory(
-                                    item.id
-                                  )
-                                }
-                              >
-                                🗑️ Delete
-                              </button>
+                                <button
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() =>
+                                    navigate(
+                                      `/editinventory/${item.id}`
+                                    )
+                                  }
+                                  title="Edit Inventory"
+                                >
+                                  ✏️ Edit
+                                </button>
+
+                                <button
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() =>
+                                    deleteInventory(
+                                      item.id
+                                    )
+                                  }
+                                  title="Delete Inventory"
+                                >
+                                  🗑️ Delete
+                                </button>
+
+                              </div>
 
                             </td>
 
                           </tr>
 
                         );
-
                       }
                     )}
 
@@ -567,8 +919,45 @@ export default function Inventory() {
 
         </div>
 
-      </div>
+        {/* ================= FOOTER ================= */}
 
+        {!loading &&
+          filteredInventory.length > 0 && (
+
+            <div className="d-flex justify-content-between align-items-center mt-3 px-1">
+
+              <small className="text-muted">
+
+                Showing{" "}
+                <strong>
+                  {filteredInventory.length}
+                </strong>{" "}
+                of{" "}
+                <strong>
+                  {inventory.length}
+                </strong>{" "}
+                inventory records
+
+              </small>
+
+              {search && (
+
+                <small className="text-muted">
+
+                  Search:{" "}
+                  <strong>
+                    "{search}"
+                  </strong>
+
+                </small>
+
+              )}
+
+            </div>
+
+          )}
+
+      </div>
     </div>
   );
 }

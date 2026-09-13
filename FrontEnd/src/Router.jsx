@@ -36,7 +36,7 @@ function ProtectedLayout() {
   return (
     <>
       <Navbar />
-
+<div className="main-content">
       <Routes>
         {/* Dashboard */}
         <Route
@@ -124,6 +124,7 @@ function ProtectedLayout() {
       </Routes>
 
        <Footer/>
+       </div>
     </>
   );
 }

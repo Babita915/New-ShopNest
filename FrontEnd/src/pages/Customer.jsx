@@ -1,12 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import "../style/customer.css";
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
+
+  // ============================
+  // CURRENT USER
+  // ============================
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  const isAdmin =
+    user?.role?.toLowerCase() === "admin";
 
   // ============================
   // GET CUSTOMERS
@@ -14,24 +26,23 @@ export default function Customers() {
   const getCustomers = async () => {
     try {
       setLoading(true);
+      setError("");
 
-     const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-const res = await axios.get(
-  "http://localhost:5000/api/v1/customers",
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+      const res = await axios.get(
+        "http://localhost:5000/api/v1/customers",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      console.log("Customers:", res.data);
-
-      setCustomers(res.data);
+      setCustomers(res.data || []);
     } catch (error) {
-      console.log(error);
-      alert("Failed to load customers");
+      console.error(error);
+      setError("Unable to load customers.");
     } finally {
       setLoading(false);
     }
@@ -42,7 +53,7 @@ const res = await axios.get(
   }, []);
 
   // ============================
-  // DELETE CUSTOMER
+  // DELETE
   // ============================
   const deleteCustomer = async (id) => {
     const confirmDelete = window.confirm(
@@ -52,28 +63,28 @@ const res = await axios.get(
     if (!confirmDelete) return;
 
     try {
-        const token = localStorage.getItem("token");
-        await axios.delete(
-  `http://localhost:5000/api/v1/customers/${id}`,
-  {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+      const token = localStorage.getItem("token");
 
-      alert("Customer deleted successfully");
+      await axios.delete(
+        `http://localhost:5000/api/v1/customers/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      getCustomers();
+      setCustomers((prev) =>
+        prev.filter((customer) => customer.id !== id)
+      );
     } catch (error) {
-      console.log(error);
-
-      alert("Delete Failed");
+      console.error(error);
+      alert("Unable to delete customer.");
     }
   };
 
   // ============================
-  // EDIT CUSTOMER
+  // EDIT
   // ============================
   const editCustomer = (id) => {
     navigate(`/editcustomer/${id}`);
@@ -85,221 +96,160 @@ const res = await axios.get(
   const totalCustomers = customers.length;
 
   const totalAdmins = customers.filter(
-    (customer) => customer.role === "admin"
+    (customer) =>
+      customer.role?.toLowerCase() === "admin"
   ).length;
 
   const totalUsers = customers.filter(
-    (customer) => customer.role === "user"
+    (customer) =>
+      customer.role?.toLowerCase() === "user"
   ).length;
 
-  const user = JSON.parse(localStorage.getItem("user"));
-  console.log(JSON.parse(localStorage.getItem("user")))
-console.log(user);
-console.log(user?.role);
-console.log(user?.role === "admin");
-const isAdmin = user?.role?.toLowerCase() === "admin";
+  // ============================
+  // FILTER
+  // ============================
+  const filteredCustomers = useMemo(() => {
+    const value = search.trim().toLowerCase();
+
+    return customers.filter((customer) => {
+      const matchesSearch =
+        !value ||
+        String(customer.id).includes(value) ||
+        customer.name?.toLowerCase().includes(value) ||
+        customer.email?.toLowerCase().includes(value) ||
+        customer.phone?.toLowerCase().includes(value) ||
+        customer.city?.toLowerCase().includes(value);
+
+      const matchesRole =
+        roleFilter === "all" ||
+        customer.role?.toLowerCase() === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [customers, search, roleFilter]);
+
+  // ============================
+  // INITIAL
+  // ============================
+  const getInitial = (name) => {
+    return name?.charAt(0)?.toUpperCase() || "?";
+  };
 
   return (
-    <div className="bg-light min-vh-100 py-4">
+    <div className="customers-page">
 
-      <div className="container-fluid px-3 px-md-4">
-        {/* ============================
-            HEADER
-        ============================ */}
-        <div className="card border-0 shadow-sm mb-4">
-          <div className="card-body p-4">
+      <div className="customers-container">
 
-            <div className="row align-items-center">
+        {/* =================================
+            PAGE HEADER
+        ================================= */}
+        <div className="page-header">
 
-              <div className="col-md-8">
+          <div className="page-heading">
 
-                <div className="d-flex align-items-center">
+            <div className="heading-icon">
+              <span>👥</span>
+            </div>
 
-                  <div
-                    className="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center me-3 shadow-sm"
-                    style={{
-                      width: "55px",
-                      height: "55px",
-                      fontSize: "25px"
-                    }}
-                  >
-                    👥
-                  </div>
-
-
-                  <div>
-                    <h2 className="fw-bold mb-1">
-                      Customers
-                    </h2>
-
-                    <p className="text-muted mb-0">
-                      Manage customers and their information
-                    </p>
-                  </div>
-
-                </div>
-
+            <div>
+              <div className="eyebrow">
+                CUSTOMER MANAGEMENT
               </div>
 
-               <div className="col-md-4 mt-3 mt-md-0 text-md-end">
-  <button 
-    className="btn btn-primary px-4 shadow-sm" 
-    onClick={() => navigate("/addcustomer")} 
-  > 
-    <span className="me-2">+</span> 
-    Add Customer 
-  </button> 
-</div>
+              <h1>Customers</h1>
 
-              <div className="col-md-4 mt-3 mt-md-0 text-md-end">
-
-                {isAdmin && (
-  <button
-    className="btn btn-primary px-4 py-2 shadow-sm"
-    onClick={() => navigate("/addcustomer")}
-  >
-    <span className="me-2">+</span>
-    Add Customer
-  </button>
-)}
-
-              </div>
-
+              <p>
+                Manage your customers, accounts and
+                access from one place.
+              </p>
             </div>
 
           </div>
+
+          {isAdmin && (
+            <button
+              className="primary-btn"
+              onClick={() =>
+                navigate("/addcustomer")
+              }
+            >
+              <span className="plus-icon">+</span>
+              New Customer
+            </button>
+          )}
+
         </div>
 
 
-        {/* ============================
+        {/* =================================
             STATISTICS
-        ============================ */}
-        <div className="row g-3 mb-4">
+        ================================= */}
+        <div className="stats-wrapper">
 
-          {/* Total Customers */}
-          <div className="col-sm-6 col-lg-4">
+          {/* Total */}
+          <div className="modern-stat total-stat">
 
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body p-4">
+            <div className="stat-top">
+              <span>Total Customers</span>
 
-                <div className="d-flex justify-content-between align-items-center">
-
-                  <div>
-
-                    <p className="text-muted mb-2">
-                      Total Customers
-                    </p>
-
-                    <h3 className="fw-bold mb-0">
-                      {totalCustomers}
-                    </h3>
-
-                    <small className="text-success">
-                      Active customers
-                    </small>
-
-                  </div>
-
-                  <div
-                    className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "60px",
-                      height: "60px",
-                      fontSize: "27px"
-                    }}
-                  >
-                    👥
-                  </div>
-
-                </div>
-
+              <div className="stat-symbol">
+                👥
               </div>
+            </div>
+
+            <div className="stat-number">
+              {totalCustomers}
+            </div>
+
+            <div className="stat-bottom">
+              <span className="status-dot"></span>
+              All registered accounts
             </div>
 
           </div>
 
 
           {/* Admin */}
-          <div className="col-sm-6 col-lg-4">
+          <div className="modern-stat admin-stat">
 
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body p-4">
+            <div className="stat-top">
+              <span>Administrators</span>
 
-                <div className="d-flex justify-content-between align-items-center">
-
-                  <div>
-
-                    <p className="text-muted mb-2">
-                      Administrators
-                    </p>
-
-                    <h3 className="fw-bold mb-0">
-                      {totalAdmins}
-                    </h3>
-
-                    <small className="text-danger">
-                      Admin accounts
-                    </small>
-
-                  </div>
-
-                  <div
-                    className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "60px",
-                      height: "60px",
-                      fontSize: "27px"
-                    }}
-                  >
-                    🛡️
-                  </div>
-
-                </div>
-
+              <div className="stat-symbol">
+                🛡️
               </div>
+            </div>
+
+            <div className="stat-number">
+              {totalAdmins}
+            </div>
+
+            <div className="stat-bottom">
+              <span className="status-dot"></span>
+              Admin accounts
             </div>
 
           </div>
 
 
           {/* Users */}
-          <div className="col-sm-6 col-lg-4">
+          <div className="modern-stat user-stat">
 
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body p-4">
+            <div className="stat-top">
+              <span>Normal Users</span>
 
-                <div className="d-flex justify-content-between align-items-center">
-
-                  <div>
-
-                    <p className="text-muted mb-2">
-                      Normal Users
-                    </p>
-
-                    <h3 className="fw-bold mb-0">
-                      {totalUsers}
-                    </h3>
-
-                    <small className="text-success">
-                      Registered users
-                    </small>
-
-                  </div>
-
-                  <div
-                    className="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "60px",
-                      height: "60px",
-                      fontSize: "27px"
-                    }}
-                  >
-                    👤
-                  </div>
-
-                </div>
-
+              <div className="stat-symbol">
+                👤
               </div>
+            </div>
+
+            <div className="stat-number">
+              {totalUsers}
+            </div>
+
+            <div className="stat-bottom">
+              <span className="status-dot"></span>
+              Registered users
             </div>
 
           </div>
@@ -307,191 +257,227 @@ const isAdmin = user?.role?.toLowerCase() === "admin";
         </div>
 
 
-        {/* ============================
-            CUSTOMER TABLE
-        ============================ */}
-        <div className="card border-0 shadow-sm">
+        {/* =================================
+            MAIN CUSTOMER PANEL
+        ================================= */}
+        <div className="customers-panel">
 
-          <div className="card-body p-0">
+          {/* Panel Header */}
+          <div className="panel-header">
 
-            {/* TABLE HEADER */}
-            <div className="p-4 border-bottom">
+            <div>
+              <div className="panel-title-row">
+                <h2>Customer Directory</h2>
 
-              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-
-                <div>
-
-                  <h5 className="fw-bold mb-1">
-                    Customer List
-                  </h5>
-
-                  <small className="text-muted">
-                    View and manage all registered customers
-                  </small>
-
-                </div>
-
-                <span className="badge bg-primary rounded-pill px-3 py-2">
-                  {customers.length} Customers
+                <span className="total-pill">
+                  {filteredCustomers.length}
                 </span>
-
               </div>
+
+              <p>
+                Browse and manage customer information.
+              </p>
+            </div>
+
+          </div>
+
+
+          {/* =================================
+              TOOLBAR
+          ================================= */}
+          <div className="customer-toolbar">
+
+            <div className="search-container">
+
+              <span className="search-icon">
+                ⌕
+              </span>
+
+              <input
+                type="text"
+                value={search}
+                placeholder="Search customers..."
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+              />
+
+              {search && (
+                <button
+                  className="clear-btn"
+                  onClick={() => setSearch("")}
+                >
+                  ×
+                </button>
+              )}
 
             </div>
 
 
-            {/* LOADING */}
-            {loading ? (
+            {/* Role Filter */}
+            <div className="filter-container">
 
-              <div className="text-center py-5">
+              <span>Filter:</span>
 
-                <div
-                  className="spinner-border text-primary mb-3"
-                  style={{
-                    width: "3rem",
-                    height: "3rem"
-                  }}
-                  role="status"
-                >
-                </div>
+              <select
+                value={roleFilter}
+                onChange={(e) =>
+                  setRoleFilter(e.target.value)
+                }
+              >
+                <option value="all">
+                  All Customers
+                </option>
 
-                <h6 className="fw-semibold">
-                  Loading customers...
-                </h6>
+                <option value="admin">
+                  Administrators
+                </option>
 
-                <p className="text-muted mb-0">
-                  Please wait while we fetch customer data.
-                </p>
+                <option value="user">
+                  Normal Users
+                </option>
+              </select>
 
+            </div>
+
+          </div>
+
+
+          {/* =================================
+              CONTENT
+          ================================= */}
+          {loading ? (
+
+            <div className="empty-state">
+
+              <div className="loader"></div>
+
+              <h3>Loading customers</h3>
+
+              <p>
+                Fetching customer information...
+              </p>
+
+            </div>
+
+          ) : error ? (
+
+            <div className="empty-state">
+
+              <div className="empty-icon error">
+                !
               </div>
 
-            ) : customers.length === 0 ? (
+              <h3>Unable to load customers</h3>
 
-              /* ============================
-                 EMPTY STATE
-              ============================ */
+              <p>{error}</p>
 
-              <div className="text-center py-5 px-3">
+              <button
+                className="secondary-btn"
+                onClick={getCustomers}
+              >
+                Try Again
+              </button>
 
-                <div
-                  className="bg-primary bg-opacity-10 text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    fontSize: "35px"
-                  }}
-                >
-                  👥
-                </div>
+            </div>
 
-                <h5 className="fw-bold">
-                  No Customers Found
-                </h5>
+          ) : filteredCustomers.length === 0 ? (
 
-                <p className="text-muted">
-                  There are no customers in your database yet.
-                </p>
+            <div className="empty-state">
 
+              <div className="empty-icon">
+                {search ? "⌕" : "👥"}
+              </div>
+
+              <h3>
+                {search
+                  ? "No customers found"
+                  : "No customers yet"}
+              </h3>
+
+              <p>
+                {search
+                  ? "Try changing your search or filter."
+                  : "Start by adding your first customer."}
+              </p>
+
+              {search ? (
                 <button
-                  className="btn btn-primary px-4"
-                  onClick={() =>
-                    navigate("/addcustomer")
-                  }
+                  className="secondary-btn"
+                  onClick={() => {
+                    setSearch("");
+                    setRoleFilter("all");
+                  }}
                 >
-                  + Add First Customer
+                  Clear Filters
                 </button>
+              ) : (
+                isAdmin && (
+                  <button
+                    className="primary-btn"
+                    onClick={() =>
+                      navigate("/addcustomer")
+                    }
+                  >
+                    + Add Customer
+                  </button>
+                )
+              )}
 
-              </div>
+            </div>
 
-            ) : (
+          ) : (
 
-              /* ============================
-                 TABLE
-              ============================ */
+            <div className="table-scroll">
 
-              <div className="table-responsive">
+              <table className="modern-table">
 
-                <table className="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Contact</th>
+                    <th>Location</th>
+                    <th>Role</th>
+                    <th className="actions-heading">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-                  <thead className="table-dark">
+                <tbody>
 
-                    <tr>
+                  {filteredCustomers.map((customer) => {
 
-                      <th className="px-4 py-3">
-                        ID
-                      </th>
+                    const role =
+                      customer.role?.toLowerCase();
 
-                      <th className="py-3">
-                        Customer
-                      </th>
+                    const isCustomerAdmin =
+                      role === "admin";
 
-                      <th className="py-3">
-                        Email
-                      </th>
-
-                      <th className="py-3">
-                        Phone
-                      </th>
-
-                      <th className="py-3">
-                        City
-                      </th>
-
-                      <th className="py-3">
-                        Role
-                      </th>
-
-                      <th className="text-center py-3">
-                        Actions
-                      </th>
-
-                    </tr>
-
-                  </thead>
-
-
-                  <tbody>
-
-                    {customers.map((customer) => (
-
+                    return (
                       <tr key={customer.id}>
-
-                        {/* ID */}
-                        <td className="px-4">
-
-                          <span className="badge bg-secondary rounded-pill">
-                            #{customer.id}
-                          </span>
-
-                        </td>
-
 
                         {/* CUSTOMER */}
                         <td>
 
-                          <div className="d-flex align-items-center">
+                          <div className="customer-cell">
 
-                            <div
-                              className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold"
-                              style={{
-                                width: "42px",
-                                height: "42px"
-                              }}
-                            >
-                              {customer.name
-                                ?.charAt(0)
-                                ?.toUpperCase()}
+                            <div className="avatar">
+                              {getInitial(
+                                customer.name
+                              )}
                             </div>
 
-                            <div>
+                            <div className="customer-name">
 
-                              <div className="fw-semibold">
-                                {customer.name}
-                              </div>
+                              <strong>
+                                {customer.name ||
+                                  "Unknown"}
+                              </strong>
 
-                              <small className="text-muted">
-                                Customer ID #{customer.id}
-                              </small>
+                              <span>
+                                ID #{customer.id}
+                              </span>
 
                             </div>
 
@@ -500,31 +486,35 @@ const isAdmin = user?.role?.toLowerCase() === "admin";
                         </td>
 
 
-                        {/* EMAIL */}
+                        {/* CONTACT */}
                         <td>
 
-                          <span className="text-dark">
-                            {customer.email}
-                          </span>
+                          <div className="contact-cell">
+
+                            <span>
+                              ✉{" "}
+                              {customer.email ||
+                                "No email"}
+                            </span>
+
+                            <small>
+                              ☎{" "}
+                              {customer.phone ||
+                                "No phone"}
+                            </small>
+
+                          </div>
 
                         </td>
 
 
-                        {/* PHONE */}
+                        {/* LOCATION */}
                         <td>
 
-                          <span className="text-muted">
-                            {customer.phone || "N/A"}
-                          </span>
-
-                        </td>
-
-
-                        {/* CITY */}
-                        <td>
-
-                          <span className="badge bg-light text-dark border">
-                            📍 {customer.city || "N/A"}
+                          <span className="location">
+                            <span>📍</span>
+                            {customer.city ||
+                              "Not specified"}
                           </span>
 
                         </td>
@@ -533,70 +523,79 @@ const isAdmin = user?.role?.toLowerCase() === "admin";
                         {/* ROLE */}
                         <td>
 
-                          {customer.role === "admin" ? (
-
-                            <span className="badge bg-danger rounded-pill px-3">
-                              🛡️ Admin
+                          {isCustomerAdmin ? (
+                            <span className="role admin">
+                              <span></span>
+                              Admin
                             </span>
-
                           ) : (
-
-                            <span className="badge bg-success rounded-pill px-3">
-                              👤 User
+                            <span className="role user">
+                              <span></span>
+                              User
                             </span>
-
                           )}
 
                         </td>
 
 
                         {/* ACTIONS */}
-                        <td className="text-center">
+                        <td>
 
-  {isAdmin ? (
-    <div className="d-flex justify-content-center gap-2">
+                          {isAdmin ? (
 
-      <button
-        className="btn btn-outline-primary btn-sm"
-        onClick={() => editCustomer(customer.id)}
-      >
-        ✏️
-      </button>
+                            <div className="table-actions">
 
-      <button
-        className="btn btn-outline-danger btn-sm"
-        onClick={() => deleteCustomer(customer.id)}
-      >
-        🗑️
-      </button>
+                              <button
+                                className="action edit"
+                                onClick={() =>
+                                  editCustomer(
+                                    customer.id
+                                  )
+                                }
+                                title="Edit customer"
+                              >
+                                ✎
+                              </button>
 
-    </div>
-  ) : (
-    <span className="badge bg-secondary">
-      View Only
-    </span>
-  )}
+                              <button
+                                className="action delete"
+                                onClick={() =>
+                                  deleteCustomer(
+                                    customer.id
+                                  )
+                                }
+                                title="Delete customer"
+                              >
+                                ×
+                              </button>
 
-</td>
+                            </div>
+
+                          ) : (
+
+                            <span className="view-label">
+                              View only
+                            </span>
+
+                          )}
+
+                        </td>
 
                       </tr>
+                    );
+                  })}
 
-                    ))}
+                </tbody>
 
-                  </tbody>
+              </table>
 
-                </table>
+            </div>
 
-              </div>
-
-            )}
-
-          </div>
+          )}
 
         </div>
 
       </div>
-
     </div>
   );
 }

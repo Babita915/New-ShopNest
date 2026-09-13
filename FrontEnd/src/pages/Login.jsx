@@ -10,41 +10,110 @@ export default function Login() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // =========================
+  // HANDLE INPUT
+  // =========================
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setLoginData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  // =========================
+  // HANDLE LOGIN
+  // =========================
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    setError("");
+
+    const email = loginData.email.trim();
+    const password = loginData.password;
+
+    // Basic validation
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
 
     try {
       setLoading(true);
 
       const response = await axios.post(
         "http://localhost:5000/api/v1/auth/login",
-        loginData
+        {
+          email: email.toLowerCase(),
+          password: password,
+        }
       );
 
-      localStorage.setItem(
-        "token",
-        response.data.data.token
-      );
+      console.log("Login Response:", response.data);
 
-      localStorage.setItem(
-        "customer",
-        JSON.stringify(response.data.data.customer)
-      );
+      const loginResponse = response.data?.data;
 
-      alert("Login Successful");
+      const token = loginResponse?.token;
+      const customer = loginResponse?.customer;
+
+      if (!token) {
+        throw new Error("Token was not received from server.");
+      }
+
+      // =========================
+      // SAVE TOKEN
+      // =========================
+
+      localStorage.setItem("token", token);
+
+      // =========================
+      // SAVE CUSTOMER
+      // =========================
+
+      if (customer) {
+        localStorage.setItem(
+          "customer",
+          JSON.stringify(customer)
+        );
+
+        // Used by dashboard/admin components
+        localStorage.setItem(
+          "user",
+          JSON.stringify(customer)
+        );
+      }
+
+      // =========================
+      // REDIRECT
+      // =========================
 
       navigate("/dashboard");
 
     } catch (error) {
       console.log(
+        "Login Error:",
         error.response?.data || error.message
       );
 
-      alert(
+      setError(
         error.response?.data?.message ||
-        "Invalid Email or Password"
+        "Invalid email or password. Please try again."
       );
 
     } finally {
@@ -53,24 +122,44 @@ export default function Login() {
   };
 
   return (
-    <div className="container-fluid min-vh-100 bg-light d-flex align-items-center justify-content-center">
+    <div
+      className="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-5"
+      style={{
+        background:
+          "linear-gradient(135deg, #eef4ff 0%, #f8f9fa 50%, #eef2f7 100%)",
+      }}
+    >
 
       <div className="row w-100 justify-content-center">
 
         <div className="col-12 col-sm-10 col-md-7 col-lg-5 col-xl-4">
 
-          <div className="card border-0 shadow-lg rounded-4">
+          {/* =========================
+              LOGIN CARD
+          ========================= */}
+
+          <div
+            className="card border-0 shadow-lg rounded-4 overflow-hidden"
+            style={{
+              backgroundColor: "#ffffff",
+            }}
+          >
 
             <div className="card-body p-4 p-md-5">
 
-              {/* Logo / Heading */}
+              {/* =========================
+                  LOGO + HEADER
+              ========================= */}
+
               <div className="text-center mb-4">
 
                 <div
-                  className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                  className="d-inline-flex align-items-center justify-content-center rounded-4 shadow-sm mb-3"
                   style={{
-                    width: "65px",
-                    height: "65px",
+                    width: "68px",
+                    height: "68px",
+                    background:
+                      "linear-gradient(135deg, #0d6efd, #4f8dfd)",
                     fontSize: "28px",
                   }}
                 >
@@ -78,110 +167,232 @@ export default function Login() {
                 </div>
 
                 <h2 className="fw-bold mb-1">
-                  Welcome Back
+                  Welcome Back!
                 </h2>
 
                 <p className="text-muted mb-0">
-                  Login to your account
+                  Sign in to continue to ShopNest
                 </p>
 
               </div>
 
+              {/* =========================
+                  ERROR MESSAGE
+              ========================= */}
+
+              {error && (
+                <div
+                  className="alert alert-danger border-0 rounded-3 py-2 px-3 mb-4"
+                  role="alert"
+                >
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fw-bold">⚠</span>
+
+                    <small>{error}</small>
+                  </div>
+                </div>
+              )}
+
+              {/* =========================
+                  LOGIN FORM
+              ========================= */}
+
               <form onSubmit={handleLogin}>
 
-                {/* Email */}
+                {/* =========================
+                    EMAIL
+                ========================= */}
+
                 <div className="mb-3">
 
-                  <label className="form-label fw-semibold">
+                  <label
+                    htmlFor="email"
+                    className="form-label fw-semibold"
+                  >
                     Email Address
                   </label>
 
-                  <input
-                    type="email"
-                    className="form-control form-control-lg"
-                    placeholder="Enter your email"
-                    value={loginData.email}
-                    onChange={(e) =>
-                      setLoginData({
-                        ...loginData,
-                        email: e.target.value,
-                      })
-                    }
-                    required
-                  />
+                  <div className="position-relative">
+
+                    <span
+                      className="position-absolute top-50 translate-middle-y"
+                      style={{
+                        left: "14px",
+                        fontSize: "17px",
+                        zIndex: 2,
+                      }}
+                    >
+                      ✉️
+                    </span>
+
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      className="form-control form-control-lg rounded-3 ps-5"
+                      placeholder="Enter your email"
+                      value={loginData.email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                      disabled={loading}
+                      required
+                    />
+
+                  </div>
 
                 </div>
 
-                {/* Password */}
+                {/* =========================
+                    PASSWORD
+                ========================= */}
+
                 <div className="mb-2">
 
-                  <label className="form-label fw-semibold">
+                  <label
+                    htmlFor="password"
+                    className="form-label fw-semibold"
+                  >
                     Password
                   </label>
 
-                  <input
-                    type="password"
-                    className="form-control form-control-lg"
-                    placeholder="Enter your password"
-                    value={loginData.password}
-                    onChange={(e) =>
-                      setLoginData({
-                        ...loginData,
-                        password: e.target.value,
-                      })
-                    }
-                    required
-                  />
+                  <div className="position-relative">
+
+                    <span
+                      className="position-absolute top-50 translate-middle-y"
+                      style={{
+                        left: "14px",
+                        fontSize: "17px",
+                        zIndex: 2,
+                      }}
+                    >
+                      🔑
+                    </span>
+
+                    <input
+                      id="password"
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
+                      name="password"
+                      className="form-control form-control-lg rounded-3 ps-5 pe-5"
+                      placeholder="Enter your password"
+                      value={loginData.password}
+                      onChange={handleChange}
+                      autoComplete="current-password"
+                      disabled={loading}
+                      required
+                    />
+
+                    {/* Eye Button */}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword(
+                          (prev) => !prev
+                        )
+                      }
+                      disabled={loading}
+                      className="btn position-absolute top-50 end-0 translate-middle-y border-0"
+                      style={{
+                        right: "4px",
+                        color: "#6c757d",
+                        fontSize: "17px",
+                        background: "transparent",
+                      }}
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+
+                  </div>
 
                 </div>
 
-                {/* Forgot Password */}
+                {/* =========================
+                    FORGOT PASSWORD
+                ========================= */}
+
                 <div className="text-end mb-4">
 
                   <Link
                     to="/forgotpassword"
-                    className="text-primary text-decoration-none"
+                    className="text-primary text-decoration-none small fw-semibold"
                   >
                     Forgot Password?
                   </Link>
 
                 </div>
 
-                {/* Login Button */}
+                {/* =========================
+                    LOGIN BUTTON
+                ========================= */}
+
                 <button
                   type="submit"
-                  className="btn btn-primary btn-lg w-100 fw-semibold"
+                  className="btn btn-primary btn-lg w-100 rounded-3 fw-semibold shadow-sm"
                   disabled={loading}
                 >
+
                   {loading ? (
                     <>
                       <span
                         className="spinner-border spinner-border-sm me-2"
                         role="status"
+                        aria-hidden="true"
                       ></span>
 
-                      Logging in...
+                      Signing in...
                     </>
                   ) : (
-                    "Login"
+                    <>
+                      Login
+                      <span className="ms-2">
+                        →
+                      </span>
+                    </>
                   )}
+
                 </button>
 
               </form>
 
-              {/* Register */}
+              {/* =========================
+                  REGISTER
+              ========================= */}
+
               <div className="text-center mt-4">
 
-                <span className="text-muted">
+                <span className="text-muted small">
                   Don't have an account?{" "}
                 </span>
 
                 <Link
                   to="/register"
-                  className="fw-semibold text-decoration-none"
+                  className="fw-semibold text-primary text-decoration-none"
                 >
                   Create Account
                 </Link>
+
+              </div>
+
+              {/* =========================
+                  SECURITY
+              ========================= */}
+
+              <div
+                className="text-center mt-4 pt-3 border-top"
+              >
+
+                <small className="text-muted">
+                  🔒 Secure login • Your information is protected
+                </small>
 
               </div>
 
@@ -189,8 +400,11 @@ export default function Login() {
 
           </div>
 
-          {/* Footer */}
-          <p className="text-center text-muted small mt-3">
+          {/* =========================
+              FOOTER
+          ========================= */}
+
+          <p className="text-center text-muted small mt-3 mb-0">
             © 2026 ShopNest. All rights reserved.
           </p>
 

@@ -6,6 +6,7 @@ import {
   removeFromCart,
 } from "../Redux/Slice";
 import { useNavigate } from "react-router-dom";
+import "../style/card.css";
 
 export default function Card() {
   const dispatch = useDispatch();
@@ -15,138 +16,177 @@ export default function Card() {
     (state) => state.cart?.items || []
   );
 
-  const subtotal = cartItems.reduce(
-    (total, item) =>
-      total +
-      Number(item.price || 0) * Number(item.qty || 0),
+  // Calculate subtotal
+  const subtotal = cartItems.reduce((total, item) => {
+    const price = Number(item.price) || 0;
+    const qty = Number(item.qty) || 0;
+
+    return total + price * qty;
+  }, 0);
+
+  // Total quantity of products
+  const totalItems = cartItems.reduce(
+    (total, item) => total + (Number(item.qty) || 0),
     0
   );
 
   return (
-    <div className="container my-5">
-      <div className="card shadow-sm p-4">
+    <div className="container cart-container">
+      <div className="cart-wrapper">
 
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-          <h4 className="mb-0">
-            My Basket{" "}
-            <span className="text-muted">
-              ({cartItems.length} items)
-            </span>
-          </h4>
+        <div className="cart-header">
+          <div>
+            <h2>My Basket</h2>
+            <p>
+              {totalItems} {totalItems === 1 ? "item" : "items"} in your basket
+            </p>
+          </div>
+
+          <button
+            className="continue-shopping-btn"
+            onClick={() => navigate("/product")}
+          >
+            ← Continue Shopping
+          </button>
         </div>
 
         {/* Empty Basket */}
         {cartItems.length === 0 ? (
-          <div className="text-center py-5">
-            <h5>Your Basket is Empty</h5>
+          <div className="empty-cart">
+            <div className="empty-cart-icon">🛒</div>
 
-            <p className="text-muted">
-              Add some products to your basket.
+            <h3>Your Basket is Empty</h3>
+
+            <p>
+              You haven't added any products yet.
             </p>
+
+            <button
+              className="shop-now-btn"
+              onClick={() => navigate("/products")}
+            >
+              Start Shopping
+            </button>
           </div>
         ) : (
-          <>
-            {/* Cart Products */}
-            {cartItems.map((item) => (
-              <div
-                key={item.id}
-                className="d-flex justify-content-between align-items-center border-bottom py-3"
-              >
+          <div className="cart-content">
 
-                {/* Product Details */}
-                <div className="d-flex align-items-center gap-3">
+            {/* Cart Items */}
+            <div className="cart-items">
 
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      objectFit: "contain",
-                    }}
-                  />
+              {cartItems.map((item) => {
+                const price = Number(item.price) || 0;
+                const qty = Number(item.qty) || 0;
+                const itemTotal = price * qty;
 
-                  <div>
-                    <h6 className="mb-1">
-                      {item.name}
-                    </h6>
+                return (
+                  <div className="cart-item" key={item.id}>
 
-                    <p className="mb-2 text-muted">
-                      ₹{Number(item.price).toFixed(2)}
-                    </p>
+                    {/* Product Image */}
+                    <div className="cart-product-image">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                      />
+                    </div>
 
-                    {/* Quantity Buttons */}
-                    <div className="d-flex align-items-center gap-2">
+                    {/* Product Details */}
+                    <div className="cart-product-details">
 
+                      <h5>{item.name}</h5>
+
+                      <p className="product-price">
+                        ₹{price.toFixed(2)}
+                      </p>
+
+                      {/* Quantity */}
+                      <div className="quantity-wrapper">
+                        <button
+                          className="quantity-btn"
+                          onClick={() =>
+                            dispatch(decrementQty(item.id))
+                          }
+                          aria-label={`Decrease quantity of ${item.name}`}
+                        >
+                          −
+                        </button>
+
+                        <span className="quantity">
+                          {qty}
+                        </span>
+
+                        <button
+                          className="quantity-btn"
+                          onClick={() =>
+                            dispatch(incrementQty(item.id))
+                          }
+                          aria-label={`Increase quantity of ${item.name}`}
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Remove */}
                       <button
-                        className="btn btn-outline-secondary btn-sm"
+                        className="remove-btn"
                         onClick={() =>
-                          dispatch(
-                            decrementQty(item.id)
-                          )
+                          dispatch(removeFromCart(item.id))
                         }
                       >
-                        −
-                      </button>
-
-                      <span className="fw-bold px-2">
-                        {item.qty}
-                      </span>
-
-                      <button
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() =>
-                          dispatch(
-                            incrementQty(item.id)
-                          )
-                        }
-                      >
-                        +
+                        Remove
                       </button>
 
                     </div>
 
-                    {/* Remove */}
-                    <button
-                      className="btn btn-danger mt-2"
-                      onClick={() =>
-                        dispatch(
-                          removeFromCart(item.id)
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
+                    {/* Item Total */}
+                    <div className="item-total">
+                      ₹{itemTotal.toFixed(2)}
+                    </div>
+
                   </div>
-                </div>
+                );
+              })}
 
-                {/* Item Total */}
-                <div className="fw-bold">
-                  ₹
-                  {(
-                    Number(item.price) *
-                    Number(item.qty)
-                  ).toFixed(2)}
-                </div>
-
-              </div>
-            ))}
-
-            {/* Subtotal */}
-            <div className="d-flex justify-content-between mt-4">
-              <h5>Subtotal</h5>
-
-              <h5>
-                ₹{subtotal.toFixed(2)}
-              </h5>
             </div>
 
-            {/* Checkout */}
-            <button className="btn btn-primary mt-3 w-100" onClick={() => navigate("/checkout")}>
-              Proceed to Checkout
-            </button>
-          </>
+            {/* Order Summary */}
+            <div className="order-summary">
+
+              <h4>Order Summary</h4>
+
+              <div className="summary-row">
+                <span>Items</span>
+                <span>{totalItems}</span>
+              </div>
+
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <span>₹{subtotal.toFixed(2)}</span>
+              </div>
+
+              <div className="summary-row">
+                <span>Delivery</span>
+                <span className="free-delivery">FREE</span>
+              </div>
+
+              <hr />
+
+              <div className="summary-total">
+                <span>Total</span>
+                <strong>₹{subtotal.toFixed(2)}</strong>
+              </div>
+
+              <button
+                className="checkout-btn"
+                onClick={() => navigate("/checkout")}
+              >
+                Proceed to Checkout
+              </button>
+
+            </div>
+
+          </div>
         )}
       </div>
     </div>

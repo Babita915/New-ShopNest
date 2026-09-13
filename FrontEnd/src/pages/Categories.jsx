@@ -6,6 +6,8 @@ export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -15,6 +17,7 @@ export default function Categories() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const token = localStorage.getItem("token");
 
@@ -31,8 +34,11 @@ export default function Categories() {
 
       setCategories(res.data);
     } catch (error) {
-      console.log(
-        error.response?.data || error.message
+      console.log(error.response?.data || error.message);
+
+      setError(
+        error.response?.data?.message ||
+          "Unable to load categories"
       );
     } finally {
       setLoading(false);
@@ -54,6 +60,9 @@ export default function Categories() {
     if (!confirmDelete) return;
 
     try {
+      setError("");
+      setMessage("");
+
       const token = localStorage.getItem("token");
 
       await axios.delete(
@@ -65,17 +74,25 @@ export default function Categories() {
         }
       );
 
-      alert("Category deleted successfully");
+      setMessage("Category deleted successfully.");
 
-      fetchCategories();
+      // Remove category directly from UI
+      setCategories((prev) =>
+        prev.filter((category) => category.id !== id)
+      );
+
+      // Message hide after 3 seconds
+      setTimeout(() => {
+        setMessage("");
+      }, 3000);
     } catch (error) {
       console.log(
         error.response?.data || error.message
       );
 
-      alert(
+      setError(
         error.response?.data?.message ||
-        "Category delete failed"
+          "Category delete failed"
       );
     }
   };
@@ -90,60 +107,149 @@ export default function Categories() {
         .includes(search.toLowerCase())
   );
 
-  return (
-    <div className="container-fluid bg-light min-vh-100 py-4">
+  // =========================
+  // CLEAR SEARCH
+  // =========================
+  const clearSearch = () => {
+    setSearch("");
+  };
 
-      <div className="container">
+  // =========================
+  // CATEGORY INITIAL
+  // =========================
+  const getInitial = (name) => {
+    return name?.charAt(0)?.toUpperCase() || "C";
+  };
+
+  return (
+    <div
+      className="min-vh-100 py-4"
+      style={{
+        backgroundColor: "#f5f7fb",
+      }}
+    >
+      <div className="container-fluid px-3 px-md-4">
 
         {/* ================= HEADER ================= */}
 
-        <div className="card border-0 shadow-sm mb-4">
+        <div
+          className="card border-0 shadow-sm mb-4"
+          style={{
+            borderRadius: "16px",
+          }}
+        >
+          <div className="card-body p-4">
 
-          <div className="card-body">
-
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
 
               <div>
-                <h2 className="fw-bold mb-1">
-                  🗂️ Categories
-                </h2>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <div
+                    className="d-flex align-items-center justify-content-center rounded-3"
+                    style={{
+                      width: "46px",
+                      height: "46px",
+                      backgroundColor: "#0d6efd",
+                      color: "white",
+                      fontSize: "22px",
+                    }}
+                  >
+                    🗂️
+                  </div>
+
+                  <h2 className="fw-bold mb-0">
+                    Categories
+                  </h2>
+                </div>
 
                 <p className="text-muted mb-0">
-                  Manage your product categories
+                  Manage and organize your product categories
                 </p>
               </div>
 
-              <button
-                className="btn btn-primary px-4"
-                onClick={() =>
-                  navigate("/addcategory")
-                }
-              >
-                + Add Category
-              </button>
+              <div className="d-flex gap-2">
+
+                <button
+                  className="btn btn-light border px-3"
+                  onClick={fetchCategories}
+                  disabled={loading}
+                >
+                  🔄 Refresh
+                </button>
+
+                <button
+                  className="btn btn-primary px-4"
+                  onClick={() =>
+                    navigate("/addcategory")
+                  }
+                >
+                  + Add Category
+                </button>
+
+              </div>
 
             </div>
 
           </div>
-
         </div>
 
+        {/* ================= MESSAGE ================= */}
+
+        {message && (
+          <div
+            className="alert alert-success border-0 shadow-sm d-flex justify-content-between align-items-center"
+            style={{
+              borderRadius: "12px",
+            }}
+          >
+            <span>
+              ✓ {message}
+            </span>
+
+            <button
+              className="btn-close"
+              onClick={() => setMessage("")}
+            ></button>
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="alert alert-danger border-0 shadow-sm d-flex justify-content-between align-items-center"
+            style={{
+              borderRadius: "12px",
+            }}
+          >
+            <span>
+              ⚠️ {error}
+            </span>
+
+            <button
+              className="btn-close"
+              onClick={() => setError("")}
+            ></button>
+          </div>
+        )}
 
         {/* ================= STATISTICS ================= */}
 
         <div className="row g-4 mb-4">
 
+          {/* TOTAL */}
+
           <div className="col-md-4">
-
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
-
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Total Categories
                     </p>
 
@@ -151,32 +257,44 @@ export default function Categories() {
                       {categories.length}
                     </h2>
 
+                    <small className="text-muted">
+                      All categories
+                    </small>
                   </div>
 
-                  <div className="bg-primary text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#e7f0ff",
+                      fontSize: "26px",
+                    }}
+                  >
                     🗂️
                   </div>
 
                 </div>
 
               </div>
-
             </div>
-
           </div>
 
+          {/* SEARCH RESULT */}
 
           <div className="col-md-4">
-
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
-
-                    <p className="text-muted mb-1">
+                    <p className="text-muted mb-2">
                       Search Results
                     </p>
 
@@ -184,100 +302,136 @@ export default function Categories() {
                       {filteredCategories.length}
                     </h2>
 
+                    <small className="text-muted">
+                      Matching categories
+                    </small>
                   </div>
 
-                  <div className="bg-success text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#e8f8ef",
+                      fontSize: "26px",
+                    }}
+                  >
                     🔍
                   </div>
 
                 </div>
 
               </div>
-
             </div>
-
           </div>
 
+          {/* STATUS */}
 
           <div className="col-md-4">
-
-            <div className="card border-0 shadow-sm h-100">
-
-              <div className="card-body">
+            <div
+              className="card border-0 shadow-sm h-100"
+              style={{
+                borderRadius: "16px",
+              }}
+            >
+              <div className="card-body p-4">
 
                 <div className="d-flex justify-content-between align-items-center">
 
                   <div>
-
-                    <p className="text-muted mb-1">
-                      Status
+                    <p className="text-muted mb-2">
+                      Category Status
                     </p>
 
-                    <h5 className="fw-bold mb-0 text-success">
+                    <h4 className="fw-bold text-success mb-1">
                       Active
-                    </h5>
+                    </h4>
 
+                    <small className="text-muted">
+                      System is running normally
+                    </small>
                   </div>
 
-                  <div className="bg-success text-white rounded-circle p-3 fs-4">
+                  <div
+                    className="rounded-4 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: "58px",
+                      height: "58px",
+                      backgroundColor: "#e8f8ef",
+                      fontSize: "26px",
+                    }}
+                  >
                     ✓
                   </div>
 
                 </div>
 
               </div>
-
             </div>
-
           </div>
 
         </div>
 
+        {/* ================= CATEGORY TABLE ================= */}
 
-        {/* ================= CATEGORY LIST ================= */}
+        <div
+          className="card border-0 shadow-sm"
+          style={{
+            borderRadius: "16px",
+          }}
+        >
 
-        <div className="card border-0 shadow-sm">
+          <div className="card-body p-4">
 
-          <div className="card-body">
+            {/* TABLE HEADER */}
 
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
 
               <div>
-
                 <h5 className="fw-bold mb-1">
                   Category List
                 </h5>
 
                 <small className="text-muted">
-                  All available product categories
+                  View, edit and manage all product categories
                 </small>
-
               </div>
-
 
               {/* SEARCH */}
 
               <div
+                className="input-group"
                 style={{
-                  maxWidth: "300px",
-                  width: "100%",
+                  maxWidth: "350px",
                 }}
               >
+
+                <span className="input-group-text bg-white">
+                  🔍
+                </span>
 
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="🔍 Search category..."
+                  placeholder="Search category..."
                   value={search}
                   onChange={(e) =>
                     setSearch(e.target.value)
                   }
                 />
 
+                {search && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={clearSearch}
+                  >
+                    ✕
+                  </button>
+                )}
+
               </div>
 
             </div>
-
 
             {/* ================= LOADING ================= */}
 
@@ -287,10 +441,14 @@ export default function Categories() {
 
                 <div
                   className="spinner-border text-primary"
+                  style={{
+                    width: "3rem",
+                    height: "3rem",
+                  }}
                   role="status"
                 ></div>
 
-                <p className="text-muted mt-3">
+                <p className="text-muted mt-3 mb-0">
                   Loading categories...
                 </p>
 
@@ -302,26 +460,47 @@ export default function Categories() {
 
               <div className="text-center py-5">
 
-                <div className="display-3 mb-3">
+                <div
+                  className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    backgroundColor: "#f0f2f5",
+                    fontSize: "35px",
+                  }}
+                >
                   🗂️
                 </div>
 
                 <h5 className="fw-bold">
-                  No Categories Found
+                  {search
+                    ? "No Matching Categories"
+                    : "No Categories Found"}
                 </h5>
 
                 <p className="text-muted">
-                  Add your first category to get started.
+                  {search
+                    ? `No category found for "${search}".`
+                    : "Add your first category to get started."}
                 </p>
 
-                <button
-                  className="btn btn-primary"
-                  onClick={() =>
-                    navigate("/addcategory")
-                  }
-                >
-                  + Add Category
-                </button>
+                {search ? (
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={clearSearch}
+                  >
+                    Clear Search
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() =>
+                      navigate("/addcategory")
+                    }
+                  >
+                    + Add Category
+                  </button>
+                )}
 
               </div>
 
@@ -331,24 +510,32 @@ export default function Categories() {
 
               <div className="table-responsive">
 
-                <table className="table table-hover align-middle">
+                <table className="table align-middle mb-0">
 
-                  <thead className="table-dark">
-
+                  <thead
+                    style={{
+                      backgroundColor: "#f8f9fa",
+                    }}
+                  >
                     <tr>
 
-                      <th>ID</th>
+                      <th className="py-3">
+                        ID
+                      </th>
 
-                      <th>Category Name</th>
+                      <th className="py-3">
+                        Category
+                      </th>
 
-                      <th>Status</th>
+                      <th className="py-3">
+                        Status
+                      </th>
 
-                      <th className="text-center">
-                        Action
+                      <th className="py-3 text-center">
+                        Actions
                       </th>
 
                     </tr>
-
                   </thead>
 
                   <tbody>
@@ -362,74 +549,98 @@ export default function Categories() {
 
                           <td>
 
-                            <span className="badge bg-secondary">
+                            <span
+                              className="badge rounded-pill"
+                              style={{
+                                backgroundColor: "#f0f2f5",
+                                color: "#495057",
+                                padding: "8px 12px",
+                              }}
+                            >
                               #{category.id}
                             </span>
 
                           </td>
 
-
-                          {/* NAME */}
+                          {/* CATEGORY */}
 
                           <td>
 
                             <div className="d-flex align-items-center">
 
                               <div
-                                className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                                className="rounded-3 d-flex align-items-center justify-content-center me-3"
                                 style={{
-                                  width: "40px",
-                                  height: "40px",
+                                  width: "44px",
+                                  height: "44px",
+                                  backgroundColor: "#e7f0ff",
+                                  color: "#0d6efd",
+                                  fontWeight: "700",
+                                  fontSize: "18px",
                                 }}
                               >
-                                🗂️
+                                {getInitial(
+                                  category.name
+                                )}
                               </div>
 
-                              <span className="fw-semibold">
-                                {category.name}
-                              </span>
+                              <div>
+
+                                <div className="fw-semibold">
+                                  {category.name}
+                                </div>
+
+                                <small className="text-muted">
+                                  Product Category
+                                </small>
+
+                              </div>
 
                             </div>
 
                           </td>
 
-
                           {/* STATUS */}
 
                           <td>
 
-                            <span className="badge bg-success">
-                              Active
+                            <span className="badge rounded-pill bg-success-subtle text-success px-3 py-2">
+                              ● Active
                             </span>
 
                           </td>
 
-
-                          {/* ACTION */}
+                          {/* ACTIONS */}
 
                           <td className="text-center">
 
-                            <button
-                              className="btn btn-outline-success btn-sm me-2"
-                              onClick={() =>
-                                navigate(
-                                  `/editcategory/${category.id}`
-                                )
-                              }
-                            >
-                              ✏️ Edit
-                            </button>
+                            <div className="d-flex justify-content-center gap-2">
 
-                            <button
-                              className="btn btn-outline-danger btn-sm"
-                              onClick={() =>
-                                deleteCategory(
-                                  category.id
-                                )
-                              }
-                            >
-                              🗑️ Delete
-                            </button>
+                              <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() =>
+                                  navigate(
+                                    `/editcategory/${category.id}`
+                                  )
+                                }
+                                title="Edit Category"
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() =>
+                                  deleteCategory(
+                                    category.id
+                                  )
+                                }
+                                title="Delete Category"
+                              >
+                                🗑️ Delete
+                              </button>
+
+                            </div>
 
                           </td>
 
@@ -447,11 +658,37 @@ export default function Categories() {
             )}
 
           </div>
-
         </div>
 
-      </div>
+        {/* ================= FOOTER INFO ================= */}
 
+        {!loading &&
+          filteredCategories.length > 0 && (
+            <div className="d-flex justify-content-between align-items-center mt-3 px-1">
+
+              <small className="text-muted">
+                Showing{" "}
+                <strong>
+                  {filteredCategories.length}
+                </strong>{" "}
+                of{" "}
+                <strong>
+                  {categories.length}
+                </strong>{" "}
+                categories
+              </small>
+
+              {search && (
+                <small className="text-muted">
+                  Search:{" "}
+                  <strong>"{search}"</strong>
+                </small>
+              )}
+
+            </div>
+          )}
+
+      </div>
     </div>
   );
 }

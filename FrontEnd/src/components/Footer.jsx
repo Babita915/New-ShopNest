@@ -4,106 +4,85 @@ import "../style/footer.css";
 
 export default function Footer() {
   return (
-    <footer className="footer">
+    <footer className="shopnest-footer">
 
-      <div className="container footer-container">
-        <div className="row">
+      {/* Footer Main */}
+      <div className="footer-container">
 
-          {/* About */}
-          <div className="col-md-4 mb-4">
-            <h4 className="footer-title">ShopNest</h4>
+        <div className="footer-grid">
 
-            <p className="footer-description">
-              Your one-stop online shopping destination.
-              Shop products easily and securely from anywhere.
+          {/* Brand */}
+          <div className="footer-brand">
+            <h2>
+              ShopNest<span>.</span>
+            </h2>
+
+            <p>
+              Your trusted online shopping destination.
+              Discover quality products with a simple,
+              secure and smooth shopping experience.
             </p>
+
+            <div className="footer-badge">
+              🛍️ <span>Smart Shopping. Better Living.</span>
+            </div>
           </div>
 
           {/* Quick Links */}
-          <div className="col-md-2 mb-4">
-            <h5 className="footer-heading">Quick Links</h5>
+          <div className="footer-section">
+            <h4>Quick Links</h4>
 
-            <ul className="footer-links">
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-
-              <li>
-                <Link to="/products">Products</Link>
-              </li>
-
-              <li>
-                <Link to="/categories">Categories</Link>
-              </li>
-
-              <li>
-                <Link to="/cart">Cart</Link>
-              </li>
-
-              <li>
-                <Link to="/orders">Orders</Link>
-              </li>
-            </ul>
+            <Link to="/">Home</Link>
+            <Link to="/products">Products</Link>
+            <Link to="/categories">Categories</Link>
+            <Link to="/cart">Cart</Link>
+            <Link to="/orders">Orders</Link>
           </div>
 
-          {/* Customer Support */}
-          <div className="col-md-3 mb-4">
-            <h5 className="footer-heading">Customer Support</h5>
+          {/* Newsletter */}
+          <div className="footer-newsletter">
+            <h4>Stay Connected</h4>
 
-            <ul className="footer-links">
-              <li>
-                <Link to="/contact">Contact Us</Link>
-              </li>
+            <p>
+              Get updates about new products and offers.
+            </p>
 
-              <li>
-                <Link to="/help">Help Center</Link>
-              </li>
+            <div className="newsletter-box">
+              <input
+                type="email"
+                placeholder="Enter your email"
+              />
 
-              <li>
-                <Link to="/shipping">Shipping</Link>
-              </li>
+              <button>→</button>
+            </div>
 
-              <li>
-                <Link to="/returns">Returns & Refunds</Link>
-              </li>
-            </ul>
-          </div>
+            <div className="footer-socials">
 
-          {/* Social Media */}
-          <div className="col-md-3 mb-4">
-            <h5 className="footer-heading">Follow Us</h5>
+              <a
+                href="https://github.com/Babita915"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
 
-            <ul className="footer-links">
-              <li>
-                <a
-                  href="https://github.com/Babita915"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GitHub
-                </a>
-              </li>
+              <a
+                href="https://www.linkedin.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                LinkedIn
+              </a>
 
-              <li>
-                <a
-                  href="https://www.linkedin.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  LinkedIn
-                </a>
-              </li>
+              <a
+                href="https://www.instagram.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Instagram
+              </a>
 
-              <li>
-                <a
-                  href="https://www.instagram.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Instagram
-                </a>
-              </li>
-            </ul>
+            </div>
           </div>
 
         </div>
@@ -111,9 +90,13 @@ export default function Footer() {
 
       {/* Bottom Footer */}
       <div className="footer-bottom">
+
         <p>
-          © 2026 ShopNest. All rights reserved.
+          © 2026 <strong>ShopNest</strong>. All rights reserved.
         </p>
+
+        
+
       </div>
 
     </footer>

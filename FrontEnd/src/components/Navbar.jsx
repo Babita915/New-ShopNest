@@ -1,104 +1,159 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import "../style/navbar.css";
 import AddToCard from "../AddToCart";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
-  return (
-    <nav className="navbar navbar-expand-lg navbar-dark custom-navbar fixed-top">
-      <div className="container">
+  const handleLinkClick = () => {
+    // Mobile par page select hone ke baad sidebar close
+    setIsOpen(false);
+  };
 
-        <Link className="navbar-brand fw-bold fs-3" to="/dashboard">
-         ShopNest.
+  const isActive = (path) => {
+    return location.pathname === path ? "active" : "";
+  };
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <div className="mobile-header">
+        <Link to="/dashboard" className="mobile-logo">
+          ShopNest<span>.</span>
         </Link>
 
         <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
+          className="sidebar-toggle"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle sidebar"
         >
-          <span className="navbar-toggler-icon"></span>
+          ☰
         </button>
+      </div>
 
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto">
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setIsOpen(false)}
+        ></div>
+      )}
 
-            <li className="nav-item">
-              <Link className="nav-link" to="/dashboard">
-                Dashboard
-              </Link>
-            </li>
+      {/* Sidebar */}
+      <aside className={`shopnest-sidebar ${isOpen ? "show" : ""}`}>
 
-            <li className="nav-item">
-              <Link className="nav-link" to="/customer">
-                Customers
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/categories">
-                Categories
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/product">
-                Products
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/inventory">
-                Inventory
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/orders">
-                Orders
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" to="/payment">
-                Payments
-              </Link>
-            </li>
-
-               <li className="nav-item">
-              <Link className="nav-link" to="/analytics">
-                Aanlytics
-              </Link>
-            </li>
-
-            <li className="nav-item">
-               <AddToCard/>
-            </li>
-
-            <li className="nav-item">
-              <button
-                className="btn btn-warning"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </li>
-
-          </ul>
+        {/* Logo */}
+        <div className="sidebar-logo">
+          <Link to="/dashboard" onClick={handleLinkClick}>
+            ShopNest<span>.</span>
+          </Link>
         </div>
 
-      </div>
-    </nav>
+        {/* Navigation */}
+        <div className="sidebar-menu">
+
+          <p className="menu-title">MAIN MENU</p>
+
+          <Link
+            to="/dashboard"
+            className={`sidebar-link ${isActive("/dashboard")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">⌂</span>
+            <span>Dashboard</span>
+          </Link>
+
+          <Link
+            to="/customer"
+            className={`sidebar-link ${isActive("/customer")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">♙</span>
+            <span>Customers</span>
+          </Link>
+
+          <Link
+            to="/categories"
+            className={`sidebar-link ${isActive("/categories")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">▦</span>
+            <span>Categories</span>
+          </Link>
+
+          <Link
+            to="/product"
+            className={`sidebar-link ${isActive("/product")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">▣</span>
+            <span>Products</span>
+          </Link>
+
+          <Link
+            to="/inventory"
+            className={`sidebar-link ${isActive("/inventory")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">▤</span>
+            <span>Inventory</span>
+          </Link>
+
+          <Link
+            to="/orders"
+            className={`sidebar-link ${isActive("/orders")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">🛒</span>
+            <span>Orders</span>
+          </Link>
+
+          <Link
+            to="/payment"
+            className={`sidebar-link ${isActive("/payment")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">▣</span>
+            <span>Payments</span>
+          </Link>
+
+          <Link
+            to="/analytics"
+            className={`sidebar-link ${isActive("/analytics")}`}
+            onClick={handleLinkClick}
+          >
+            <span className="sidebar-icon">▥</span>
+            <span>Analytics</span>
+          </Link>
+
+          <p className="menu-title bottom-title">ACCOUNT</p>
+
+          {/* Cart */}
+          <div className="sidebar-cart">
+            <span className="sidebar-icon">🛒</span>
+            <AddToCard />
+          </div>
+
+          {/* Logout */}
+          <button
+            className="sidebar-logout"
+            onClick={handleLogout}
+          >
+            <span className="sidebar-icon">↪</span>
+            <span>Logout</span>
+          </button>
+
+        </div>
+      </aside>
+    </>
   );
 }

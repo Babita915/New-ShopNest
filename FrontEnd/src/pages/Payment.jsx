@@ -1,13 +1,19 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import "../style/payment.css";
 
 export default function Payment() {
   const [payment, setPayment] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [methodFilter, setMethodFilter] = useState("all");
+  const [error, setError] = useState("");
 
   const fetchPayment = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const token = localStorage.getItem("token");
 
@@ -27,10 +33,14 @@ export default function Payment() {
           ? res.data.data
           : []
       );
-
     } catch (error) {
       console.log(
         error.response?.data || error.message
+      );
+
+      setError(
+        error.response?.data?.message ||
+        "Unable to load payment data."
       );
     } finally {
       setLoading(false);
@@ -41,215 +51,559 @@ export default function Payment() {
     fetchPayment();
   }, []);
 
+  // -------------------------
   // Format Amount
+  // -------------------------
   const formatAmount = (amount) => {
     return Number(amount || 0).toLocaleString("en-IN");
   };
 
+  // -------------------------
   // Format Date
+  // -------------------------
   const formatDate = (date) => {
     if (!date) return "N/A";
 
-    return new Date(date).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return new Date(date).toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   };
 
-  // Status Badge
+  // -------------------------
+  // Format Payment Method
+  // -------------------------
+  const formatMethod = (method) => {
+    if (!method) return "N/A";
+
+    return method
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) =>
+        char.toUpperCase()
+      );
+  };
+
+  // -------------------------
+  // Status Class
+  // -------------------------
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case "success":
       case "completed":
-        return "bg-success";
+        return "payment-success";
 
       case "pending":
-        return "bg-warning text-dark";
+        return "payment-pending";
 
       case "failed":
-        return "bg-danger";
+        return "payment-failed";
 
       default:
-        return "bg-secondary";
+        return "payment-unknown";
     }
   };
 
+  // -------------------------
+  // Status Icon
+  // -------------------------
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "success":
+      case "completed":
+        return "✓";
+
+      case "pending":
+        return "◷";
+
+      case "failed":
+        return "×";
+
+      default:
+        return "•";
+    }
+  };
+
+  // -------------------------
+  // Payment Methods
+  // -------------------------
+  const paymentMethods = useMemo(() => {
+    const methods = payment
+      .map((item) => item.payment_method)
+      .filter(Boolean);
+
+    return [...new Set(methods)];
+  }, [payment]);
+
+  // -------------------------
+  // Statistics
+  // -------------------------
+  const stats = useMemo(() => {
+    const totalAmount = payment.reduce(
+      (sum, item) =>
+        sum + Number(item.amount || 0),
+      0
+    );
+
+    const successful = payment.filter(
+      (item) =>
+        ["success", "completed"].includes(
+          item.status?.toLowerCase()
+        )
+    ).length;
+
+    const pending = payment.filter(
+      (item) =>
+        item.status?.toLowerCase() === "pending"
+    ).length;
+
+    const failed = payment.filter(
+      (item) =>
+        item.status?.toLowerCase() === "failed"
+    ).length;
+
+    return {
+      totalAmount,
+      successful,
+      pending,
+      failed,
+    };
+  }, [payment]);
+
+  // -------------------------
+  // Filter Payments
+  // -------------------------
+  const filteredPayments = useMemo(() => {
+    return payment.filter((item) => {
+      const searchText =
+        `${item.id} ${item.order_id} ${item.payment_method} ${item.status}`
+          .toLowerCase();
+
+      const matchesSearch =
+        searchText.includes(search.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        item.status?.toLowerCase() ===
+          statusFilter.toLowerCase();
+
+      const matchesMethod =
+        methodFilter === "all" ||
+        item.payment_method === methodFilter;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesMethod
+      );
+    });
+  }, [
+    payment,
+    search,
+    statusFilter,
+    methodFilter,
+  ]);
+
   return (
-    <div className="container-fluid bg-light min-vh-100 py-4">
+    <div className="payment-page">
 
-      <div className="container">
+      {/* ================= HEADER ================= */}
 
-        {/* Header */}
-        <div className="card border-0 shadow-sm mb-4">
+      <div className="payment-header">
 
-          <div className="card-body">
+        <div className="payment-heading">
 
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div className="payment-heading-icon">
+            ₹
+          </div>
 
-              <div>
-                <h2 className="fw-bold mb-1">
-                  Payments
-                </h2>
+          <div>
+            <span className="payment-eyebrow">
+              TRANSACTION MANAGEMENT
+            </span>
 
-                <p className="text-muted mb-0">
-                  Manage and view all payment transactions
-                </p>
-              </div>
+            <h1>Payments</h1>
 
-              <div>
-                <span className="badge bg-primary fs-6 px-3 py-2">
-                  Total Payments: {payment.length}
-                </span>
-              </div>
-
-            </div>
-
+            <p>
+              Track and manage all payment
+              transactions from one place.
+            </p>
           </div>
 
         </div>
 
-        {/* Payment Table */}
-        <div className="card border-0 shadow-sm">
+        <button
+          className="payment-refresh"
+          onClick={fetchPayment}
+          disabled={loading}
+        >
+          <span>↻</span>
+          Refresh
+        </button>
 
-          <div className="card-body">
+      </div>
 
-            <div className="d-flex justify-content-between align-items-center mb-3">
+      {/* ================= ERROR ================= */}
 
-              <h5 className="fw-bold mb-0">
-                Payment List
-              </h5>
+      {error && (
+        <div className="payment-error">
+          <span>!</span>
+          <div>
+            <strong>Something went wrong</strong>
+            <p>{error}</p>
+          </div>
 
-              <button
-                className="btn btn-outline-primary btn-sm"
-                onClick={fetchPayment}
-              >
-                🔄 Refresh
-              </button>
+          <button onClick={fetchPayment}>
+            Try Again
+          </button>
+        </div>
+      )}
 
+      {/* ================= STATISTICS ================= */}
+
+      <div className="payment-stats">
+
+        <div className="payment-stat total">
+          <div className="stat-top">
+            <span>Total Transactions</span>
+            <div className="stat-icon">
+              ₹
             </div>
+          </div>
 
-            {/* Loading */}
-            {loading ? (
+          <h2>{payment.length}</h2>
 
-              <div className="text-center py-5">
+          <p>
+            All recorded payments
+          </p>
+        </div>
 
-                <div
-                  className="spinner-border text-primary"
-                  role="status"
-                ></div>
+        <div className="payment-stat revenue">
+          <div className="stat-top">
+            <span>Total Revenue</span>
+            <div className="stat-icon">
+              ₹
+            </div>
+          </div>
 
-                <p className="text-muted mt-2 mb-0">
-                  Loading payments...
-                </p>
+          <h2>
+            ₹{formatAmount(stats.totalAmount)}
+          </h2>
 
-              </div>
+          <p>
+            Transaction value
+          </p>
+        </div>
 
-            ) : payment.length === 0 ? (
+        <div className="payment-stat success">
+          <div className="stat-top">
+            <span>Successful</span>
+            <div className="stat-icon">
+              ✓
+            </div>
+          </div>
 
-              /* Empty State */
-              <div className="text-center py-5">
+          <h2>{stats.successful}</h2>
 
-                <div className="display-3 mb-3">
-                  💳
-                </div>
+          <p>
+            Completed transactions
+          </p>
+        </div>
 
-                <h5 className="fw-bold">
-                  No Payments Found
-                </h5>
+        <div className="payment-stat pending">
+          <div className="stat-top">
+            <span>Pending</span>
+            <div className="stat-icon">
+              ◷
+            </div>
+          </div>
 
-                <p className="text-muted mb-0">
-                  There are currently no payment transactions.
-                </p>
+          <h2>{stats.pending}</h2>
 
-              </div>
+          <p>
+            Awaiting confirmation
+          </p>
+        </div>
 
-            ) : (
+      </div>
 
-              <div className="table-responsive">
+      {/* ================= DIRECTORY ================= */}
 
-                <table className="table table-hover align-middle">
+      <div className="payment-panel">
 
-                  <thead className="table-dark">
+        <div className="payment-panel-header">
 
-                    <tr>
-                      <th>Payment ID</th>
-                      <th>Order ID</th>
-                      <th>Amount</th>
-                      <th>Payment Method</th>
-                      <th>Status</th>
-                      <th>Payment Date</th>
-                    </tr>
+          <div>
+            <span className="panel-label">
+              PAYMENT DIRECTORY
+            </span>
 
-                  </thead>
+            <h3>
+              Recent Transactions
+            </h3>
+          </div>
 
-                  <tbody>
+          <div className="transaction-count">
+            {filteredPayments.length} results
+          </div>
 
-                    {payment.map((item) => (
+        </div>
 
-                      <tr key={item.id}>
+        {/* ================= FILTER BAR ================= */}
 
-                        {/* Payment ID */}
-                        <td>
-                          <span className="badge bg-secondary">
-                            #{item.id}
-                          </span>
-                        </td>
+        <div className="payment-toolbar">
 
-                        {/* Order ID */}
-                        <td>
-                          <span className="fw-semibold">
-                            #{item.order_id}
-                          </span>
-                        </td>
+          <div className="payment-search">
 
-                        {/* Amount */}
-                        <td>
-                          <span className="fw-bold text-success">
-                            ₹{formatAmount(item.amount)}
-                          </span>
-                        </td>
+            <span>⌕</span>
 
-                        {/* Payment Method */}
-                        <td>
-                          <span className="badge bg-info text-dark">
-                            {item.payment_method || "N/A"}
-                          </span>
-                        </td>
+            <input
+              type="text"
+              placeholder="Search payment, order, method..."
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+            />
 
-                        {/* Status */}
-                        <td>
-
-                          <span
-                            className={`badge ${getStatusClass(
-                              item.status
-                            )}`}
-                          >
-                            {item.status || "Unknown"}
-                          </span>
-
-                        </td>
-
-                        {/* Date */}
-                        <td>
-                          {formatDate(item.payment_date)}
-                        </td>
-
-                      </tr>
-
-                    ))}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+              >
+                ×
+              </button>
             )}
 
           </div>
 
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value)
+            }
+          >
+            <option value="all">
+              All Status
+            </option>
+
+            <option value="success">
+              Success
+            </option>
+
+            <option value="completed">
+              Completed
+            </option>
+
+            <option value="pending">
+              Pending
+            </option>
+
+            <option value="failed">
+              Failed
+            </option>
+          </select>
+
+          <select
+            value={methodFilter}
+            onChange={(e) =>
+              setMethodFilter(e.target.value)
+            }
+          >
+            <option value="all">
+              All Methods
+            </option>
+
+            {paymentMethods.map((method) => (
+              <option
+                key={method}
+                value={method}
+              >
+                {formatMethod(method)}
+              </option>
+            ))}
+          </select>
+
         </div>
+
+        {/* ================= CONTENT ================= */}
+
+        {loading ? (
+
+          <div className="payment-loading">
+
+            <div className="loading-circle"></div>
+
+            <h4>Loading payments</h4>
+
+            <p>
+              Fetching transaction information...
+            </p>
+
+          </div>
+
+        ) : filteredPayments.length === 0 ? (
+
+          <div className="payment-empty">
+
+            <div className="empty-icon">
+              ₹
+            </div>
+
+            <h4>
+              No transactions found
+            </h4>
+
+            <p>
+              Try changing your search or
+              filter options.
+            </p>
+
+            {(search ||
+              statusFilter !== "all" ||
+              methodFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("all");
+                  setMethodFilter("all");
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+
+          </div>
+
+        ) : (
+
+          <div className="payment-table-wrapper">
+
+            <table className="payment-table">
+
+              <thead>
+                <tr>
+                  <th>TRANSACTION</th>
+                  <th>ORDER</th>
+                  <th>AMOUNT</th>
+                  <th>METHOD</th>
+                  <th>STATUS</th>
+                  <th>DATE</th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {filteredPayments.map(
+                  (item) => (
+
+                    <tr key={item.id}>
+
+                      {/* Transaction */}
+
+                      <td>
+
+                        <div className="transaction-cell">
+
+                          <div className="transaction-icon">
+                            ₹
+                          </div>
+
+                          <div>
+                            <strong>
+                              PAY-
+                              {String(item.id)
+                                .padStart(4, "0")}
+                            </strong>
+
+                            <small>
+                              Payment ID #{item.id}
+                            </small>
+                          </div>
+
+                        </div>
+
+                      </td>
+
+                      {/* Order */}
+
+                      <td>
+
+                        <span className="order-number">
+                          #{item.order_id}
+                        </span>
+
+                      </td>
+
+                      {/* Amount */}
+
+                      <td>
+
+                        <strong className="payment-amount">
+                          ₹{formatAmount(item.amount)}
+                        </strong>
+
+                      </td>
+
+                      {/* Method */}
+
+                      <td>
+
+                        <span className="method-badge">
+                          {formatMethod(
+                            item.payment_method
+                          )}
+                        </span>
+
+                      </td>
+
+                      {/* Status */}
+
+                      <td>
+
+                        <span
+                          className={`status-badge ${getStatusClass(
+                            item.status
+                          )}`}
+                        >
+                          <span>
+                            {getStatusIcon(
+                              item.status
+                            )}
+                          </span>
+
+                          {item.status ||
+                            "Unknown"}
+                        </span>
+
+                      </td>
+
+                      {/* Date */}
+
+                      <td>
+
+                        <div className="date-cell">
+                          {formatDate(
+                            item.payment_date
+                          )}
+                        </div>
+
+                      </td>
+
+                    </tr>
+
+                  )
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        )}
 
       </div>
 
