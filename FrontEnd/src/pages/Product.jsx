@@ -126,6 +126,7 @@ export default function Products() {
     }
 
     return (
+      <div className="container">
       <div className="product-card">
 
         {/* =====================
@@ -232,13 +233,14 @@ export default function Products() {
         </div>
 
       </div>
+      </div>
     );
   };
 
   return (
     <>
 
-
+        <div className="container">
       <div className="products-page">
 
         {/* =================================
@@ -549,6 +551,7 @@ export default function Products() {
 
           )}
 
+      </div>
       </div>
     </>
   );
