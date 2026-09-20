@@ -1,0 +1,356 @@
+/* ===========================
+   Analytics Page
+=========================== */
+
+.analytics-page {
+  min-height: 100vh;
+
+  padding: 30px;
+
+  background: #f8fafc;
+
+  color: #0f172a;
+}
+
+
+/* ===========================
+   Header
+=========================== */
+
+.analytics-header {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  margin-bottom: 30px;
+}
+
+.analytics-label {
+  color: #2563eb;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+
+  margin-bottom: 7px;
+}
+
+.analytics-header h1 {
+  margin: 0;
+
+  font-size: 30px;
+
+  font-weight: 800;
+
+  color: #0f172a;
+}
+
+.analytics-header p {
+  margin: 8px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+.analytics-admin {
+  padding: 9px 15px;
+
+  border-radius: 20px;
+
+  background: #eff6ff;
+
+  border: 1px solid #dbeafe;
+
+  color: #1d4ed8;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.analytics-admin span {
+  color: #22c55e;
+
+  font-size: 9px;
+
+  margin-right: 6px;
+}
+
+
+/* ===========================
+   Overview
+=========================== */
+
+.analytics-overview {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #1e3a8a
+  );
+
+  color: white;
+
+  padding: 22px 25px;
+
+  border-radius: 15px;
+
+  margin-bottom: 22px;
+
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.12);
+}
+
+.analytics-overview h3 {
+  margin: 0;
+
+  font-size: 18px;
+
+  font-weight: 750;
+}
+
+.analytics-overview p {
+  margin: 5px 0 0;
+
+  color: #cbd5e1;
+
+  font-size: 12px;
+}
+
+.live-status {
+  padding: 7px 12px;
+
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  color: #86efac;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+
+/* ===========================
+   Dashboard Cards
+=========================== */
+
+.analytics-card-wrapper {
+  margin-bottom: 25px;
+}
+
+
+/* ===========================
+   Grid
+=========================== */
+
+.analytics-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 20px;
+
+  margin-bottom: 20px;
+}
+
+.revenue-grid {
+  grid-template-columns: 1.6fr 1fr;
+}
+
+
+/* ===========================
+   Analytics Box
+=========================== */
+
+.analytics-box {
+  background: white;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 15px;
+
+  overflow: hidden;
+
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.05);
+
+  margin-bottom: 20px;
+
+  transition: 0.25s ease;
+}
+
+.analytics-box:hover {
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.full-width {
+  width: 100%;
+}
+
+
+/* ===========================
+   Box Header
+=========================== */
+
+.analytics-box-header {
+  min-height: 75px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 17px 20px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  background: #ffffff;
+}
+
+.analytics-box-header > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.analytics-box-header > div > span {
+  width: 42px;
+
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background: #eff6ff;
+
+  border-radius: 10px;
+
+  font-size: 19px;
+}
+
+.analytics-box-header h3 {
+  margin: 0;
+
+  color: #1e293b;
+
+  font-size: 15px;
+
+  font-weight: 750;
+}
+
+.analytics-box-header p {
+  margin: 4px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+.box-badge {
+  padding: 6px 10px;
+
+  background: #f1f5f9;
+
+  color: #64748b;
+
+  border-radius: 6px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+/* ===========================
+   Box Body
+=========================== */
+
+.analytics-box-body {
+  padding: 20px;
+
+  overflow-x: auto;
+}
+
+
+/* ===========================
+   Note
+=========================== */
+
+.analytics-note {
+  text-align: center;
+
+  padding: 10px 0 25px;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+
+/* ===========================
+   Tablet
+=========================== */
+
+@media (max-width: 1000px) {
+
+  .analytics-grid,
+  .revenue-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* ===========================
+   Mobile
+=========================== */
+
+@media (max-width: 700px) {
+
+  .analytics-page {
+    padding: 20px 15px;
+  }
+
+  .analytics-header {
+    flex-direction: column;
+
+    gap: 15px;
+  }
+
+  .analytics-header h1 {
+    font-size: 24px;
+  }
+
+  .analytics-overview {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 12px;
+  }
+
+  .analytics-box-header {
+    padding: 14px;
+  }
+
+  .analytics-box-body {
+    padding: 14px;
+  }
+
+}
