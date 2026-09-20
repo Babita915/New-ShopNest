@@ -1,5 +1,5 @@
 const customerRepository = require("../respository/customer.respository");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const createCustomer = async (name, email, password, role, phone, city) => {
 

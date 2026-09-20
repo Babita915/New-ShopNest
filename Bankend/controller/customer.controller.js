@@ -1,5 +1,5 @@
 const customerService = require('../service/customer.service')
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const createCustomer = async (req, res) => {
     try {
 

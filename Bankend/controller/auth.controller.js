@@ -1,9 +1,18 @@
 const authService = require("../service/auth.service");
 
+// =========================
+// REGISTER
+// =========================
 const register = async (req, res) => {
     try {
-
-        const { name, email, password, role, phone, city } = req.body;
+        const {
+            name,
+            email,
+            password,
+            role,
+            phone,
+            city
+        } = req.body || {};
 
         const customer = await authService.register(
             name,
@@ -21,19 +30,23 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-
         return res.status(400).json({
             success: false,
             message: error.message
         });
-
     }
 };
 
+
+// =========================
+// LOGIN
+// =========================
 const login = async (req, res) => {
     try {
-
-        const { email, password } = req.body;
+        const {
+            email,
+            password
+        } = req.body || {};
 
         const result = await authService.login(
             email,
@@ -46,41 +59,46 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-
         return res.status(400).json({
             success: false,
             message: error.message
         });
-
     }
 };
 
+
+// =========================
+// FORGOT PASSWORD
+// =========================
 const forgotPassword = async (req, res) => {
     try {
+        const { email } = req.body || {};
 
-        const { email } = req.body;
-
-        const token = await authService.forgotPassword(email);
+        await authService.forgotPassword(email);
 
         return res.status(200).json({
             success: true,
-            message: token
+            message: "Password reset link sent successfully"
         });
 
     } catch (error) {
-
         return res.status(400).json({
             success: false,
             message: error.message
         });
-
     }
 };
 
+
+// =========================
+// RESET PASSWORD
+// =========================
 const resetPassword = async (req, res) => {
     try {
-
-        const { token, password } = req.body || {};
+        const {
+            token,
+            password
+        } = req.body || {};
 
         if (!token || !password) {
             return res.status(400).json({
@@ -89,7 +107,11 @@ const resetPassword = async (req, res) => {
             });
         }
 
-        const result = await authService.resetPassword(token, password);
+        const result =
+            await authService.resetPassword(
+                token,
+                password
+            );
 
         return res.status(200).json({
             success: true,
@@ -103,6 +125,7 @@ const resetPassword = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     register,

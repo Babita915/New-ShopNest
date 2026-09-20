@@ -8,10 +8,10 @@ const createCustomer = async (
     phone,
     city
 ) => {
-
     const query = `
-        INSERT INTO customers(name, email, password, role, phone, city)
-        VALUES($1, $2, $3, $4, $5, $6)
+        INSERT INTO customers
+        (name, email, password, role, phone, city)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *;
     `;
 
@@ -27,8 +27,8 @@ const createCustomer = async (
     return result.rows[0];
 };
 
-const findCustomerByEmail = async (email) => {
 
+const findCustomerByEmail = async (email) => {
     const query = `
         SELECT *
         FROM customers
@@ -40,10 +40,8 @@ const findCustomerByEmail = async (email) => {
     return result.rows[0];
 };
 
-const saveResetToken = async (id, token, expiry) => {
-      console.log("Saving Token:", token);
-  console.log("Customer ID:", id);
 
+const saveResetToken = async (id, token, expiry) => {
     const query = `
         UPDATE customers
         SET
@@ -62,8 +60,8 @@ const saveResetToken = async (id, token, expiry) => {
     return result.rows[0];
 };
 
+
 const findByResetToken = async (token) => {
-    console.log("Searching Token:", token);
     const query = `
         SELECT *
         FROM customers
@@ -75,8 +73,8 @@ const findByResetToken = async (token) => {
     return result.rows[0];
 };
 
-const updatePassword = async (id, password) => {
 
+const updatePassword = async (id, password) => {
     const query = `
         UPDATE customers
         SET
@@ -95,10 +93,11 @@ const updatePassword = async (id, password) => {
     return result.rows[0];
 };
 
+
 module.exports = {
     createCustomer,
     findCustomerByEmail,
     saveResetToken,
     findByResetToken,
     updatePassword
-};
+}  
